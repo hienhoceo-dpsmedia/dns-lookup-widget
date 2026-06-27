@@ -29,6 +29,25 @@
 		this.running = false;
 		this.tableData = [];
 		this.rowMap = {};
+
+		// Translation texts from container attributes
+		this.tTxtAllDns = root.getAttribute('data-txt-all-dns') || 'ALL DNS';
+		this.tTxtStopping = root.getAttribute('data-txt-stopping') || 'Đang dừng...';
+		this.tTxtEnterDomain = root.getAttribute('data-txt-enter-domain') || 'Vui lòng nhập ít nhất một tên miền.';
+		this.tTxtSelectColumn = root.getAttribute('data-txt-select-column') || 'Vui lòng chọn ít nhất một cột cần kiểm tra.';
+		this.tTxtLimitExceeded = root.getAttribute('data-txt-limit-exceeded') || 'Danh sách vượt giới hạn %s tên miền. Hãy chia nhỏ danh sách.';
+		this.tTxtMissingConfig = root.getAttribute('data-txt-missing-config') || 'Thiếu cấu hình REST endpoint.';
+		this.tTxtStoppedAt = root.getAttribute('data-txt-stopped-at') || 'Đã dừng tại %s/%s.';
+		this.tTxtCompleted = root.getAttribute('data-txt-completed') || 'Hoàn thành: %s domain x %s cột.';
+		this.tTxtNoDataCopy = root.getAttribute('data-txt-no-data-copy') || 'Không có dữ liệu để sao chép.';
+		this.tTxtCopied = root.getAttribute('data-txt-copied') || 'Đã sao chép TSV vào clipboard.';
+		this.tTxtCopyFailed = root.getAttribute('data-txt-copy-failed') || 'Sao chép thất bại: %s';
+		this.tTxtReady = root.getAttribute('data-txt-ready') || 'Sẵn sàng tra cứu DNS & server';
+		this.tTxtEmptySubtext = root.getAttribute('data-txt-empty-subtext') || 'Mỗi domain là một dòng, mỗi loại kiểm tra là một cột.';
+		this.tTxtDomain = root.getAttribute('data-txt-domain') || 'Domain';
+		this.tTxtEmpty = root.getAttribute('data-txt-empty') || 'Empty';
+		this.tTxtError = root.getAttribute('data-txt-error') || 'Error';
+
 		this.bindElements();
 		this.seedDefaultTypes();
 		this.renderTypes();
@@ -106,7 +125,7 @@
 
 			button.type = 'button';
 			button.className = 'dps-dns-type';
-			button.textContent = TYPE_LABELS[type] || type;
+			button.textContent = type === 'ALL' ? widget.tTxtAllDns : (TYPE_LABELS[type] || type);
 			button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
 
 			if (isActive) {
@@ -168,7 +187,7 @@
 
 		this.stopButton.addEventListener('click', function () {
 			widget.abort = true;
-			widget.setStatus('Đang dừng...');
+			widget.setStatus(widget.tTxtStopping);
 		});
 
 		this.clearButton.addEventListener('click', function () {
@@ -291,9 +310,9 @@
 		icon.setAttribute('aria-hidden', 'true');
 		icon.textContent = 'Lookup';
 		title.className = 'dps-dns-empty-title';
-		title.textContent = 'Sẵn sàng tra cứu DNS & server';
+		title.textContent = this.tTxtReady;
 		copy.className = 'dps-dns-empty-copy';
-		copy.textContent = 'Mỗi domain là một dòng, mỗi loại kiểm tra là một cột.';
+		copy.textContent = this.tTxtEmptySubtext;
 
 		empty.appendChild(icon);
 		empty.appendChild(title);
@@ -320,7 +339,7 @@
 		head.style.gridTemplateColumns = gridTemplate;
 		body.className = 'dps-dns-table-body';
 
-		this.addHeaderCell(head, 'Domain');
+		this.addHeaderCell(head, this.tTxtDomain);
 		types.forEach(function (type) {
 			widget.addHeaderCell(head, TYPE_LABELS[type] || type);
 		});
@@ -385,8 +404,8 @@
 		cell.textContent = '';
 
 		if (!rows.length) {
-			this.appendBadge(cell, 'Empty', 'neutral');
-			return textValue;
+			this.appendBadge(cell, this.tTxtEmpty, 'neutral');
+			return this.tTxtEmpty;
 		}
 
 		if (type === 'HTTP') {
@@ -541,22 +560,22 @@
 		types = this.getSelectedTypes();
 
 		if (!domains.length) {
-			this.showError('Vui lòng nhập ít nhất một tên miền.');
+			this.showError(this.tTxtEnterDomain);
 			return;
 		}
 
 		if (!types.length) {
-			this.showError('Vui lòng chọn ít nhất một cột cần kiểm tra.');
+			this.showError(this.tTxtSelectColumn);
 			return;
 		}
 
 		if (domains.length > this.limit) {
-			this.showError('Danh sách vượt giới hạn ' + String(this.limit) + ' tên miền. Hãy chia nhỏ danh sách.');
+			this.showError(this.tTxtLimitExceeded.replace('%s', String(this.limit)));
 			return;
 		}
 
 		if (!this.config.restUrl) {
-			this.showError('Thiếu cấu hình REST endpoint.');
+			this.showError(this.tTxtMissingConfig);
 			return;
 		}
 
@@ -587,8 +606,8 @@
 					this.rowMap[domain].data.results[type] = displayText;
 				} catch (error) {
 					cell.textContent = '';
-					this.appendBadge(cell, 'Error', 'error');
-					this.rowMap[domain].data.results[type] = 'Error';
+					this.appendBadge(cell, this.tTxtError, 'error');
+					this.rowMap[domain].data.results[type] = this.tTxtError;
 				}
 
 				done += 1;
@@ -605,9 +624,9 @@
 		}
 
 		if (this.abort) {
-			this.setStatus('Đã dừng tại ' + String(done) + '/' + String(total) + '.');
+			this.setStatus(this.tTxtStoppedAt.replace('%s', String(done)).replace('%s', String(total)));
 		} else {
-			this.setStatus('Hoàn thành: ' + String(domains.length) + ' domain x ' + String(types.length) + ' cột.');
+			this.setStatus(this.tTxtCompleted.replace('%s', String(domains.length)).replace('%s', String(types.length)));
 		}
 
 		this.copyButton.disabled = this.tableData.length === 0;
@@ -616,7 +635,7 @@
 
 	DpsDnsLookupWidget.prototype.rowsToTsv = function () {
 		var selectedTypes = this.getSelectedTypes();
-		var lines = [['Domain'].concat(selectedTypes).join('\t')];
+		var lines = [[this.tTxtDomain].concat(selectedTypes).join('\t')];
 
 		this.tableData.forEach(function (row) {
 			var cells = [row.domain];
@@ -640,17 +659,17 @@
 		var text = this.rowsToTsv();
 
 		if (!this.tableData.length) {
-			this.setStatus('Không có dữ liệu để sao chép.');
+			this.setStatus(this.tTxtNoDataCopy);
 			return;
 		}
 
 		function done() {
-			widget.setStatus('Đã sao chép TSV vào clipboard.');
+			widget.setStatus(widget.tTxtCopied);
 		}
 
 		if (window.navigator.clipboard && window.navigator.clipboard.writeText) {
 			window.navigator.clipboard.writeText(text).then(done).catch(function (error) {
-				widget.setStatus('Sao chép thất bại: ' + error.message);
+				widget.setStatus(widget.tTxtCopyFailed.replace('%s', error.message));
 			});
 			return;
 		}

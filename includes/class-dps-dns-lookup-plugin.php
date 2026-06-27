@@ -155,6 +155,22 @@ final class DPS_DNS_Lookup_Plugin {
 			data-limit="<?php echo esc_attr( (string) $limit ); ?>"
 			data-delay="<?php echo esc_attr( (string) $delay ); ?>"
 			data-brand="<?php echo esc_attr( sanitize_text_field( $atts['brand'] ) ); ?>"
+			data-txt-all-dns="<?php echo esc_attr( __( 'ALL DNS', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-stopping="<?php echo esc_attr( __( 'Đang dừng...', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-enter-domain="<?php echo esc_attr( __( 'Vui lòng nhập ít nhất một tên miền.', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-select-column="<?php echo esc_attr( __( 'Vui lòng chọn ít nhất một cột cần kiểm tra.', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-limit-exceeded="<?php echo esc_attr( __( 'Danh sách vượt giới hạn %s tên miền. Hãy chia nhỏ danh sách.', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-missing-config="<?php echo esc_attr( __( 'Thiếu cấu hình REST endpoint.', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-stopped-at="<?php echo esc_attr( __( 'Đã dừng tại %s/%s.', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-completed="<?php echo esc_attr( __( 'Hoàn thành: %s domain x %s cột.', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-no-data-copy="<?php echo esc_attr( __( 'Không có dữ liệu để sao chép.', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-copied="<?php echo esc_attr( __( 'Đã sao chép TSV vào clipboard.', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-copy-failed="<?php echo esc_attr( __( 'Sao chép thất bại: %s', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-ready="<?php echo esc_attr( __( 'Sẵn sàng tra cứu DNS & server', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-empty-subtext="<?php echo esc_attr( __( 'Mỗi domain là một dòng, mỗi loại kiểm tra là một cột.', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-domain="<?php echo esc_attr( __( 'Domain', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-empty="<?php echo esc_attr( __( 'Empty', 'dps-dns-lookup-widget' ) ); ?>"
+			data-txt-error="<?php echo esc_attr( __( 'Error', 'dps-dns-lookup-widget' ) ); ?>"
 		>
 			<div class="dps-dns-shell">
 				<div class="dps-dns-header">
