@@ -173,6 +173,25 @@ final class DPS_DNS_Lookup_Plugin {
 			data-txt-error="<?php echo esc_attr( __( 'Error', 'dps-dns-lookup-widget' ) ); ?>"
 		>
 			<div class="dps-dns-shell">
+				<!-- Hidden translation container for TranslatePress compatibility -->
+				<div class="dps-dns-translations" style="display: none;" aria-hidden="true">
+					<span class="t-txt-all-dns"><?php esc_html_e( 'ALL DNS', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-stopping"><?php esc_html_e( 'Đang dừng...', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-enter-domain"><?php esc_html_e( 'Vui lòng nhập ít nhất một tên miền.', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-select-column"><?php esc_html_e( 'Vui lòng chọn ít nhất một cột cần kiểm tra.', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-limit-exceeded"><?php esc_html_e( 'Danh sách vượt giới hạn %s tên miền. Hãy chia nhỏ danh sách.', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-missing-config"><?php esc_html_e( 'Thiếu cấu hình REST endpoint.', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-stopped-at"><?php esc_html_e( 'Đã dừng tại %s/%s.', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-completed"><?php esc_html_e( 'Hoàn thành: %s domain x %s cột.', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-no-data-copy"><?php esc_html_e( 'Không có dữ liệu để sao chép.', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-copied"><?php esc_html_e( 'Đã sao chép TSV vào clipboard.', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-copy-failed"><?php esc_html_e( 'Sao chép thất bại: %s', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-ready"><?php esc_html_e( 'Sẵn sàng tra cứu DNS & server', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-empty-subtext"><?php esc_html_e( 'Mỗi domain là một dòng, mỗi loại kiểm tra là một cột.', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-domain"><?php esc_html_e( 'Domain', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-empty"><?php esc_html_e( 'Empty', 'dps-dns-lookup-widget' ); ?></span>
+					<span class="t-txt-error"><?php esc_html_e( 'Error', 'dps-dns-lookup-widget' ); ?></span>
+				</div>
 				<div class="dps-dns-header">
 					<div class="dps-dns-header-mark" aria-hidden="true">DPS</div>
 					<div class="dps-dns-header-copy">

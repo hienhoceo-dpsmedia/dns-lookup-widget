@@ -30,23 +30,35 @@
 		this.tableData = [];
 		this.rowMap = {};
 
-		// Translation texts from container attributes
-		this.tTxtAllDns = root.getAttribute('data-txt-all-dns') || 'ALL DNS';
-		this.tTxtStopping = root.getAttribute('data-txt-stopping') || 'Đang dừng...';
-		this.tTxtEnterDomain = root.getAttribute('data-txt-enter-domain') || 'Vui lòng nhập ít nhất một tên miền.';
-		this.tTxtSelectColumn = root.getAttribute('data-txt-select-column') || 'Vui lòng chọn ít nhất một cột cần kiểm tra.';
-		this.tTxtLimitExceeded = root.getAttribute('data-txt-limit-exceeded') || 'Danh sách vượt giới hạn %s tên miền. Hãy chia nhỏ danh sách.';
-		this.tTxtMissingConfig = root.getAttribute('data-txt-missing-config') || 'Thiếu cấu hình REST endpoint.';
-		this.tTxtStoppedAt = root.getAttribute('data-txt-stopped-at') || 'Đã dừng tại %s/%s.';
-		this.tTxtCompleted = root.getAttribute('data-txt-completed') || 'Hoàn thành: %s domain x %s cột.';
-		this.tTxtNoDataCopy = root.getAttribute('data-txt-no-data-copy') || 'Không có dữ liệu để sao chép.';
-		this.tTxtCopied = root.getAttribute('data-txt-copied') || 'Đã sao chép TSV vào clipboard.';
-		this.tTxtCopyFailed = root.getAttribute('data-txt-copy-failed') || 'Sao chép thất bại: %s';
-		this.tTxtReady = root.getAttribute('data-txt-ready') || 'Sẵn sàng tra cứu DNS & server';
-		this.tTxtEmptySubtext = root.getAttribute('data-txt-empty-subtext') || 'Mỗi domain là một dòng, mỗi loại kiểm tra là một cột.';
-		this.tTxtDomain = root.getAttribute('data-txt-domain') || 'Domain';
-		this.tTxtEmpty = root.getAttribute('data-txt-empty') || 'Empty';
-		this.tTxtError = root.getAttribute('data-txt-error') || 'Error';
+		// Helper to fetch translations from HTML nodes if available (TranslatePress friendly)
+		var getTxt = function (selector, attrName, fallback) {
+			var node = root.querySelector(selector);
+			if (node) {
+				var text = node.textContent || node.innerText;
+				if (text) {
+					return text.trim();
+				}
+			}
+			return root.getAttribute(attrName) || fallback;
+		};
+
+		// Translation texts from container attributes or hidden elements
+		this.tTxtAllDns = getTxt('.t-txt-all-dns', 'data-txt-all-dns', 'ALL DNS');
+		this.tTxtStopping = getTxt('.t-txt-stopping', 'data-txt-stopping', 'Đang dừng...');
+		this.tTxtEnterDomain = getTxt('.t-txt-enter-domain', 'data-txt-enter-domain', 'Vui lòng nhập ít nhất một tên miền.');
+		this.tTxtSelectColumn = getTxt('.t-txt-select-column', 'data-txt-select-column', 'Vui lòng chọn ít nhất một cột cần kiểm tra.');
+		this.tTxtLimitExceeded = getTxt('.t-txt-limit-exceeded', 'data-txt-limit-exceeded', 'Danh sách vượt giới hạn %s tên miền. Hãy chia nhỏ danh sách.');
+		this.tTxtMissingConfig = getTxt('.t-txt-missing-config', 'data-txt-missing-config', 'Thiếu cấu hình REST endpoint.');
+		this.tTxtStoppedAt = getTxt('.t-txt-stopped-at', 'data-txt-stopped-at', 'Đã dừng tại %s/%s.');
+		this.tTxtCompleted = getTxt('.t-txt-completed', 'data-txt-completed', 'Hoàn thành: %s domain x %s cột.');
+		this.tTxtNoDataCopy = getTxt('.t-txt-no-data-copy', 'data-txt-no-data-copy', 'Không có dữ liệu để sao chép.');
+		this.tTxtCopied = getTxt('.t-txt-copied', 'data-txt-copied', 'Đã sao chép TSV vào clipboard.');
+		this.tTxtCopyFailed = getTxt('.t-txt-copy-failed', 'data-txt-copy-failed', 'Sao chép thất bại: %s');
+		this.tTxtReady = getTxt('.t-txt-ready', 'data-txt-ready', 'Sẵn sàng tra cứu DNS & server');
+		this.tTxtEmptySubtext = getTxt('.t-txt-empty-subtext', 'data-txt-empty-subtext', 'Mỗi domain là một dòng, mỗi loại kiểm tra là một cột.');
+		this.tTxtDomain = getTxt('.t-txt-domain', 'data-txt-domain', 'Domain');
+		this.tTxtEmpty = getTxt('.t-txt-empty', 'data-txt-empty', 'Empty');
+		this.tTxtError = getTxt('.t-txt-error', 'data-txt-error', 'Error');
 
 		this.bindElements();
 		this.seedDefaultTypes();

@@ -3,7 +3,7 @@
  * Plugin Name: DPS DNS Lookup Widget
  * Plugin URI: https://dps.media/
  * Description: Adds a fast, cached bulk DNS and server health lookup widget with a shortcode.
- * Version: 1.1.3
+ * Version: 1.1.4
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: DPS.MEDIA
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'DPS_DNS_LOOKUP_WIDGET_VERSION', '1.1.3' );
+define( 'DPS_DNS_LOOKUP_WIDGET_VERSION', '1.1.4' );
 define( 'DPS_DNS_LOOKUP_WIDGET_FILE', __FILE__ );
 define( 'DPS_DNS_LOOKUP_WIDGET_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DPS_DNS_LOOKUP_WIDGET_URL', plugin_dir_url( __FILE__ ) );
