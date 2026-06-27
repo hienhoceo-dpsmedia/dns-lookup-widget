@@ -1,0 +1,57 @@
+=== DPS DNS Lookup Widget ===
+Contributors: dpsmedia
+Tags: dns, lookup, shortcode, tools, doh
+Requires at least: 6.0
+Tested up to: 7.0
+Requires PHP: 7.4
+Stable tag: 1.0.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Fast bulk DNS lookup widget for WordPress, powered by a cached REST endpoint and shortcode.
+
+== Description ==
+
+DPS DNS Lookup Widget converts a standalone WPCode HTML snippet into a standard WordPress plugin. Add the shortcode `[dps_dns_lookup]` to any post, page, or template area to render a scoped DNS lookup tool.
+
+Features:
+
+* Bulk DNS lookup from one domain per line.
+* URL-to-hostname extraction.
+* Record types: A, AAAA, CNAME, MX, NS, TXT, CAA, SOA, and ALL.
+* Cached WordPress REST proxy for better performance.
+* Lightweight public rate limiting.
+* Copy results as TSV.
+* Responsive, scoped UI that avoids theme CSS collisions.
+
+== Installation ==
+
+1. Upload the plugin folder to `/wp-content/plugins/`.
+2. Activate "DPS DNS Lookup Widget" in WordPress.
+3. Add `[dps_dns_lookup]` to a post or page.
+
+== Shortcode ==
+
+Basic:
+
+`[dps_dns_lookup]`
+
+Optional attributes:
+
+`[dps_dns_lookup limit="100" delay="120" title="Tra Cuu DNS Hang Loat"]`
+
+== Frequently Asked Questions ==
+
+= Does this call Google DNS directly from the browser? =
+
+No. The browser calls a WordPress REST endpoint. WordPress validates the request, checks cache, applies a lightweight rate limit, then uses the WordPress HTTP API to call Google DNS-over-HTTPS.
+
+= Is this compatible with cache plugins? =
+
+Yes. The widget JavaScript calls a REST endpoint for live lookups, while static assets can be cached normally.
+
+== Changelog ==
+
+= 1.0.0 =
+
+* Initial plugin release.

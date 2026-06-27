@@ -1,0 +1,1137 @@
+<!-- DNS Bulk Lookup Widget - DPS.MEDIA Branded với CSS Isolated -->
+<div id="dnsBulkWidget"></div>
+
+<script>
+(function(){
+  const root = document.getElementById('dnsBulkWidget');
+  if (!root) return;
+
+  const POPULAR = ['A','CNAME','MX','NS','TXT'];
+  const RECORDS = ['ALL', ...POPULAR];
+  const TYPE_CODE = { A:1, CNAME:5, MX:15, NS:2, TXT:16 };
+
+  // Tạo CSS cô lập với prefix
+  const widgetStyles = `
+    #dnsBulkWidget {
+      all: initial !important;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
+    }
+    
+    #dnsBulkWidget *,
+    #dnsBulkWidget *::before,
+    #dnsBulkWidget *::after {
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      background: none !important;
+      outline: none !important;
+      text-decoration: none !important;
+      list-style: none !important;
+      font: inherit !important;
+      color: inherit !important;
+      vertical-align: baseline !important;
+      line-height: normal !important;
+    }
+
+    /* Container chính */
+    #dnsBulkWidget .dns-container {
+      max-width: 1000px !important;
+      margin: 24px auto !important;
+      padding: 0 !important;
+      border: 1px solid #e5e7eb !important;
+      border-radius: 16px !important;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
+      overflow: hidden !important;
+      box-shadow: 0 10px 25px -5px rgba(21,21,119,0.1), 0 4px 6px -2px rgba(21,21,119,0.05) !important;
+      background: #ffffff !important;
+    }
+
+    /* Header */
+    #dnsBulkWidget .dns-header {
+      background: linear-gradient(135deg, #151577 0%, #1e1e7a 100%) !important;
+      padding: 20px !important;
+      color: white !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    #dnsBulkWidget .dns-header-bg1 {
+      position: absolute !important;
+      top: -20px !important;
+      right: -20px !important;
+      width: 100px !important;
+      height: 100px !important;
+      background: rgba(255,255,255,0.05) !important;
+      border-radius: 50% !important;
+    }
+
+    #dnsBulkWidget .dns-header-bg2 {
+      position: absolute !important;
+      bottom: -30px !important;
+      left: -30px !important;
+      width: 80px !important;
+      height: 80px !important;
+      background: rgba(50,181,97,0.15) !important;
+      border-radius: 50% !important;
+    }
+
+    #dnsBulkWidget .dns-header-content {
+      position: relative !important;
+      z-index: 1 !important;
+    }
+
+    #dnsBulkWidget .dns-header-top {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 8px !important;
+    }
+
+    #dnsBulkWidget .dns-header-left {
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+    }
+
+    #dnsBulkWidget .dns-icon {
+      width: 40px !important;
+      height: 40px !important;
+      background: linear-gradient(135deg, #32b561, #28a555) !important;
+      border-radius: 12px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 20px !important;
+      font-weight: bold !important;
+      color: white !important;
+      box-shadow: 0 4px 8px rgba(50,181,97,0.3) !important;
+    }
+
+    #dnsBulkWidget .dns-title {
+      margin: 0 !important;
+      font-size: 20px !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.5px !important;
+      color: #fff !important;
+    }
+
+    #dnsBulkWidget .dns-subtitle {
+      margin: 0 !important;
+      font-size: 13px !important;
+      opacity: 0.8 !important;
+    }
+
+    #dnsBulkWidget .dns-brand {
+      text-align: right !important;
+      font-size: 12px !important;
+      opacity: 0.7 !important;
+    }
+
+    #dnsBulkWidget .dns-brand-name {
+      font-weight: 600 !important;
+      color: #32b561 !important;
+    }
+
+    #dnsBulkWidget .dns-desc {
+      margin: 0 !important;
+      font-size: 13px !important;
+      opacity: 0.9 !important;
+      line-height: 1.4 !important;
+    }
+
+    /* Main Content */
+    #dnsBulkWidget .dns-main {
+      padding: 20px !important;
+    }
+
+    #dnsBulkWidget .dns-main-layout {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 16px !important;
+      margin-bottom: 16px !important;
+    }
+
+    /* Input Section */
+    #dnsBulkWidget .dns-input-section {
+      position: relative !important;
+    }
+
+    #dnsBulkWidget .dns-textarea {
+      width: 100% !important;
+      padding: 12px !important;
+      border: 2px solid #e5e7eb !important;
+      border-radius: 12px !important;
+      resize: vertical !important;
+      font-family: monospace !important;
+      font-size: 13px !important;
+      box-sizing: border-box !important;
+      transition: border-color 0.3s !important;
+      background: #fafbfc !important;
+      color: #374151 !important;
+      min-height: 120px !important;
+    }
+
+    #dnsBulkWidget .dns-textarea:focus {
+      outline: none !important;
+      border-color: #151577 !important;
+      box-shadow: 0 0 0 3px rgba(21,21,119,0.1) !important;
+    }
+
+    #dnsBulkWidget .dns-count {
+      position: absolute !important;
+      top: 8px !important;
+      right: 12px !important;
+      background: rgba(21,21,119,0.9) !important;
+      color: white !important;
+      padding: 4px 8px !important;
+      border-radius: 6px !important;
+      font-size: 11px !important;
+      font-weight: 500 !important;
+    }
+
+    /* Controls */
+    #dnsBulkWidget .dns-controls {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 12px !important;
+    }
+
+    #dnsBulkWidget .dns-label {
+      display: block !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      color: #151577 !important;
+      margin-bottom: 8px !important;
+    }
+
+    #dnsBulkWidget .dns-types {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 6px !important;
+    }
+
+    #dnsBulkWidget .dns-type-btn {
+      padding: 8px 14px !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      background: #fff !important;
+      cursor: pointer !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      transition: all 0.3s !important;
+      color: #374151 !important;
+    }
+
+    #dnsBulkWidget .dns-type-btn:hover {
+      border-color: #151577 !important;
+      color: #151577 !important;
+      transform: translateY(-1px) !important;
+    }
+
+    #dnsBulkWidget .dns-type-btn.active {
+      background: linear-gradient(135deg, #151577, #1e1e7a) !important;
+      color: #fff !important;
+      border-color: #151577 !important;
+      box-shadow: 0 4px 12px rgba(21,21,119,0.25) !important;
+    }
+
+    #dnsBulkWidget .dns-type-btn.active:hover {
+      color: #fff !important;
+      transform: translateY(-1px) !important;
+    }
+
+    /* Actions */
+    #dnsBulkWidget .dns-actions {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 12px !important;
+      align-items: end !important;
+    }
+
+    #dnsBulkWidget .dns-delay-section {
+      flex: 1 !important;
+      min-width: 140px !important;
+    }
+
+    #dnsBulkWidget .dns-delay-label {
+      display: block !important;
+      font-size: 12px !important;
+      color: #151577 !important;
+      font-weight: 500 !important;
+      margin-bottom: 4px !important;
+    }
+
+    #dnsBulkWidget .dns-delay-input-group {
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+    }
+
+    #dnsBulkWidget .dns-delay-input {
+      width: 70px !important;
+      padding: 6px 8px !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 8px !important;
+      font-size: 12px !important;
+      transition: border-color 0.3s !important;
+      background: #fff !important;
+      color: #374151 !important;
+    }
+
+    #dnsBulkWidget .dns-delay-input:focus {
+      outline: none !important;
+      border-color: #151577 !important;
+      box-shadow: 0 0 0 3px rgba(21,21,119,0.1) !important;
+    }
+
+    #dnsBulkWidget .dns-delay-unit {
+      font-size: 12px !important;
+      color: #64748b !important;
+    }
+
+    #dnsBulkWidget .dns-action-buttons {
+      display: flex !important;
+      gap: 8px !important;
+      flex-wrap: wrap !important;
+    }
+
+    #dnsBulkWidget .dns-btn {
+      padding: 12px 20px !important;
+      border: none !important;
+      border-radius: 10px !important;
+      cursor: pointer !important;
+      font-weight: 600 !important;
+      font-size: 13px !important;
+      white-space: nowrap !important;
+      transition: all 0.3s !important;
+    }
+
+    #dnsBulkWidget .dns-btn-primary {
+      background: linear-gradient(135deg, #151577, #1e1e7a) !important;
+      color: #fff !important;
+      box-shadow: 0 4px 12px rgba(21,21,119,0.3) !important;
+    }
+
+    #dnsBulkWidget .dns-btn-primary:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 6px 20px rgba(21,21,119,0.4) !important;
+    }
+
+    #dnsBulkWidget .dns-btn-secondary {
+      border: 2px solid #dc2626 !important;
+      background: #fff !important;
+      color: #dc2626 !important;
+    }
+
+    #dnsBulkWidget .dns-btn:disabled {
+      background: #6b7280 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    /* Status Bar */
+    #dnsBulkWidget .dns-status-bar {
+      display: flex !important;
+      gap: 10px !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      margin-bottom: 16px !important;
+      padding: 12px !important;
+      background: linear-gradient(90deg, #f8fafc, #f1f5f9) !important;
+      border-radius: 12px !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    #dnsBulkWidget .dns-btn-small {
+      padding: 8px 14px !important;
+      border-radius: 8px !important;
+      cursor: pointer !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      transition: all 0.3s !important;
+      background: #fff !important;
+    }
+
+    #dnsBulkWidget .dns-btn-copy {
+      border: 1px solid #32b561 !important;
+      color: #32b561 !important;
+    }
+
+    #dnsBulkWidget .dns-btn-copy:not(:disabled):hover {
+      background: #32b561 !important;
+      color: white !important;
+      transform: translateY(-1px) !important;
+    }
+
+    #dnsBulkWidget .dns-btn-copy.success {
+      background: linear-gradient(135deg, #32b561, #28a555) !important;
+      color: #fff !important;
+      border-color: #32b561 !important;
+      box-shadow: 0 4px 12px rgba(50,181,97,0.3) !important;
+    }
+
+    #dnsBulkWidget .dns-btn-clear {
+      border: 1px solid #cbd5e1 !important;
+      color: #374151 !important;
+    }
+
+    #dnsBulkWidget .dns-btn-clear:hover {
+      border-color: #151577 !important;
+      color: #151577 !important;
+      transform: translateY(-1px) !important;
+    }
+
+    #dnsBulkWidget .dns-status-right {
+      flex: 1 !important;
+      min-width: 120px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: end !important;
+      gap: 12px !important;
+    }
+
+    #dnsBulkWidget .dns-progress {
+      display: none !important;
+      background: #e2e8f0 !important;
+      border-radius: 10px !important;
+      height: 8px !important;
+      width: 120px !important;
+      overflow: hidden !important;
+      min-width: 80px !important;
+    }
+
+    #dnsBulkWidget .dns-progress-bar {
+      height: 100% !important;
+      background: linear-gradient(90deg, #151577, #32b561) !important;
+      width: 0% !important;
+      transition: width 0.3s !important;
+    }
+
+    #dnsBulkWidget .dns-status {
+      font-size: 12px !important;
+      color: #151577 !important;
+      font-weight: 600 !important;
+      text-align: right !important;
+    }
+
+    /* Error Display */
+    #dnsBulkWidget .dns-error {
+      display: none !important;
+      background: linear-gradient(135deg, #fef2f2, #fee2e2) !important;
+      border: 2px solid #fca5a5 !important;
+      color: #991b1b !important;
+      padding: 12px !important;
+      border-radius: 12px !important;
+      margin-bottom: 12px !important;
+      align-items: center !important;
+      gap: 10px !important;
+    }
+
+    #dnsBulkWidget .dns-error-icon {
+      font-size: 18px !important;
+    }
+
+    #dnsBulkWidget .dns-error-text {
+      font-weight: 500 !important;
+    }
+
+    /* Results */
+    #dnsBulkWidget .dns-results {
+      overflow: auto !important;
+      max-height: 60vh !important;
+      border: 2px solid #e5e7eb !important;
+      border-radius: 12px !important;
+      background: #fafafa !important;
+      min-height: 120px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      color: #64748b !important;
+      font-style: italic !important;
+    }
+
+    #dnsBulkWidget .dns-empty-state {
+      text-align: center !important;
+    }
+
+    #dnsBulkWidget .dns-empty-icon {
+      font-size: 32px !important;
+      margin-bottom: 8px !important;
+    }
+
+    #dnsBulkWidget .dns-empty-text {
+      margin-bottom: 4px !important;
+    }
+
+    #dnsBulkWidget .dns-empty-subtext {
+      font-size: 11px !important;
+      color: #9ca3af !important;
+    }
+
+    /* Table - Tránh dùng th, td gốc */
+    #dnsBulkWidget .dns-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      font-size: 12px !important;
+      background: #fff !important;
+    }
+
+    #dnsBulkWidget .dns-table thead {
+      position: sticky !important;
+      top: 0 !important;
+      background: linear-gradient(135deg, #151577, #1e1e7a) !important;
+      z-index: 1 !important;
+      color: white !important;
+    }
+
+    #dnsBulkWidget .dns-table-header {
+      padding: 12px 15px !important;
+      font-weight: 600 !important;
+      font-size: 12px !important;
+      text-align: left !important;
+      background: inherit !important;
+      color: inherit !important;
+    }
+
+    #dnsBulkWidget .dns-table-header.center {
+      text-align: center !important;
+    }
+
+    #dnsBulkWidget .dns-table tbody .dns-table-row:nth-child(even) {
+      background: #f8fafc !important;
+    }
+
+    #dnsBulkWidget .dns-table tbody .dns-table-row:nth-child(odd) {
+      background: #ffffff !important;
+    }
+
+    #dnsBulkWidget .dns-table-cell {
+      padding: 10px 15px !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+      font-size: 12px !important;
+      word-break: break-all !important;
+      background: inherit !important;
+      color: inherit !important;
+    }
+
+    #dnsBulkWidget .dns-table-cell.center {
+      text-align: center !important;
+    }
+
+    #dnsBulkWidget .dns-table-cell.type {
+      font-weight: 600 !important;
+      color: #151577 !important;
+    }
+
+    #dnsBulkWidget .dns-table-cell.name {
+      font-family: monospace !important;
+    }
+
+    #dnsBulkWidget .dns-table-cell.ttl {
+      font-family: monospace !important;
+      color: #32b561 !important;
+      font-weight: 500 !important;
+    }
+
+    #dnsBulkWidget .dns-table-header-row {
+      display: flex !important;
+      background: linear-gradient(135deg, #151577, #1e1e7a) !important;
+      color: white !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 1 !important;
+    }
+
+    #dnsBulkWidget .dns-table-row {
+      display: flex !important;
+    }
+
+    #dnsBulkWidget .dns-table-header:nth-child(1),
+    #dnsBulkWidget .dns-table-cell:nth-child(1) {
+      flex: 2 !important;
+      min-width: 120px !important;
+    }
+
+    #dnsBulkWidget .dns-table-header:nth-child(2),
+    #dnsBulkWidget .dns-table-cell:nth-child(2) {
+      flex: 0 0 80px !important;
+      text-align: center !important;
+    }
+
+    #dnsBulkWidget .dns-table-header:nth-child(3),
+    #dnsBulkWidget .dns-table-cell:nth-child(3) {
+      flex: 1.5 !important;
+      min-width: 100px !important;
+    }
+
+    #dnsBulkWidget .dns-table-header:nth-child(4),
+    #dnsBulkWidget .dns-table-cell:nth-child(4) {
+      flex: 0 0 60px !important;
+      text-align: center !important;
+    }
+
+    #dnsBulkWidget .dns-table-header:nth-child(5),
+    #dnsBulkWidget .dns-table-cell:nth-child(5) {
+      flex: 2.5 !important;
+      min-width: 150px !important;
+    }
+
+    /* Footer */
+    #dnsBulkWidget .dns-footer {
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9) !important;
+      padding: 12px 20px !important;
+      border-top: 1px solid #e2e8f0 !important;
+      text-align: center !important;
+      font-size: 11px !important;
+      color: #64748b !important;
+    }
+
+    #dnsBulkWidget .dns-footer-content {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      flex-wrap: wrap !important;
+    }
+
+    #dnsBulkWidget .dns-footer-brand {
+      color: #151577 !important;
+      font-weight: 700 !important;
+    }
+
+    #dnsBulkWidget .dns-footer-link {
+      color: #32b561 !important;
+      text-decoration: none !important;
+      font-weight: 600 !important;
+    }
+
+    #dnsBulkWidget .dns-footer-link:hover {
+      text-decoration: underline !important;
+    }
+
+    /* Mobile Responsive */
+    @media (min-width: 768px) {
+      #dnsBulkWidget .dns-main-layout {
+        display: grid !important;
+        grid-template-columns: 1fr 320px !important;
+        gap: 20px !important;
+      }
+      
+      #dnsBulkWidget .dns-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      
+      #dnsBulkWidget .dns-action-buttons {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+      }
+      
+      #dnsBulkWidget .dns-textarea {
+        min-height: 160px !important;
+      }
+    }
+    
+    @media (max-width: 767px) {
+      #dnsBulkWidget .dns-actions {
+        flex-direction: column !important;
+      }
+      
+      #dnsBulkWidget .dns-action-buttons {
+        width: 100% !important;
+      }
+      
+      #dnsBulkWidget .dns-btn {
+        flex: 1 !important;
+      }
+      
+      #dnsBulkWidget .dns-types {
+        justify-content: center !important;
+      }
+
+      #dnsBulkWidget .dns-table-header.mobile-hidden,
+      #dnsBulkWidget .dns-table-cell.mobile-hidden {
+        display: none !important;
+      }
+
+      #dnsBulkWidget .dns-table-header,
+      #dnsBulkWidget .dns-table-cell {
+        padding: 8px 6px !important;
+        font-size: 11px !important;
+      }
+    }
+  `;
+
+  // Thêm CSS vào head
+  const styleEl = document.createElement('style');
+  styleEl.textContent = widgetStyles;
+  document.head.appendChild(styleEl);
+
+  root.innerHTML = `
+  <div class="dns-container">
+    
+    <!-- DPS.MEDIA Header -->
+    <div class="dns-header">
+      <div class="dns-header-bg1"></div>
+      <div class="dns-header-bg2"></div>
+      <div class="dns-header-content">
+        <div class="dns-header-top">
+          <div class="dns-header-left">
+            <div class="dns-icon">🔍</div>
+            <div>
+              <div class="dns-title">Tra Cứu DNS Hàng Loạt</div>
+              <div class="dns-subtitle">Công cụ chuyên nghiệp từ DPS.MEDIA</div>
+            </div>
+          </div>
+          <div class="dns-brand">
+            <div class="dns-brand-name">DPS.MEDIA</div>
+            <div>Digital Tools</div>
+          </div>
+        </div>
+        <div class="dns-desc">Nhập mỗi tên miền một dòng (có thể dán URL). Chọn loại bản ghi hoặc "TẤT CẢ" để tra 5 loại phổ biến.</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dns-main">
+      <!-- Mobile/Desktop Layout -->
+      <div class="dns-main-layout">
+        
+        <!-- Input Section -->
+        <div class="dns-input-section">
+          <textarea id="dns-lines" class="dns-textarea" rows="6" placeholder="dps.media&#10;example.com&#10;https://sub.domain.com/"></textarea>
+          <div id="dns-count" class="dns-count">0 tên miền</div>
+        </div>
+        
+        <!-- Controls Section -->
+        <div class="dns-controls">
+          
+          <!-- Record Types -->
+          <div>
+            <div class="dns-label">Loại Bản Ghi:</div>
+            <div id="dns-types" class="dns-types"></div>
+          </div>
+          
+          <!-- Settings & Buttons Row -->
+          <div class="dns-actions">
+            
+            <!-- Delay Setting -->
+            <div class="dns-delay-section">
+              <div class="dns-delay-label">Độ trễ giữa các request:</div>
+              <div class="dns-delay-input-group">
+                <input id="dns-delay" type="number" min="50" step="10" value="120" class="dns-delay-input"> 
+                <span class="dns-delay-unit">ms</span>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="dns-action-buttons">
+              <button id="dns-run" class="dns-btn dns-btn-primary">
+                <span id="run-text">🚀 Bắt Đầu</span>
+              </button>
+              <button id="dns-stop" class="dns-btn dns-btn-secondary" style="display:none">
+                ⏹️ Dừng
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status & Actions Bar -->
+      <div class="dns-status-bar">
+        <button id="dns-copy-table" class="dns-btn-small dns-btn-copy" disabled>
+          📋 Sao Chép
+        </button>
+        <button id="dns-clear" class="dns-btn-small dns-btn-clear">
+          🗑️ Xóa
+        </button>
+        
+        <!-- Progress Bar -->
+        <div class="dns-status-right">
+          <div id="dns-progress" class="dns-progress">
+            <div id="dns-progress-bar" class="dns-progress-bar"></div>
+          </div>
+          <div id="dns-status" class="dns-status"></div>
+        </div>
+      </div>
+
+      <!-- Error Display -->
+      <div id="dns-error" class="dns-error">
+        <span class="dns-error-icon">⚠️</span>
+        <span id="dns-error-text" class="dns-error-text"></span>
+      </div>
+
+      <!-- Results Table -->
+      <div id="dns-results" class="dns-results">
+        <div class="dns-empty-state">
+          <div class="dns-empty-icon">📊</div>
+          <div class="dns-empty-text">Sẵn sàng tra cứu bản ghi DNS...</div>
+          <div class="dns-empty-subtext">Được hỗ trợ bởi DPS.MEDIA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="dns-footer">
+      <div class="dns-footer-content">
+        <span>Phát triển bởi</span>
+        <strong class="dns-footer-brand">DPS.MEDIA</strong>
+        <span>•</span>
+        <span>Công cụ số chuyên nghiệp</span>
+        <span>•</span>
+        <a href="https://dps.media" target="_blank" class="dns-footer-link">dps.media</a>
+      </div>
+    </div>
+  </div>`;
+
+  const ta = root.querySelector('#dns-lines');
+  const btnRun = root.querySelector('#dns-run');
+  const btnStop = root.querySelector('#dns-stop');
+  const btnClear = root.querySelector('#dns-clear');
+  const typesWrap = root.querySelector('#dns-types');
+  const statusEl = root.querySelector('#dns-status');
+  const errorEl = root.querySelector('#dns-error');
+  const errorTextEl = root.querySelector('#dns-error-text');
+  const resultsEl = root.querySelector('#dns-results');
+  const delayInput = root.querySelector('#dns-delay');
+  const btnCopy = root.querySelector('#dns-copy-table');
+  const countEl = root.querySelector('#dns-count');
+  const progressEl = root.querySelector('#dns-progress');
+  const progressBarEl = root.querySelector('#dns-progress-bar');
+  const runTextEl = root.querySelector('#run-text');
+
+  // Type pills với DPS branding
+  const TYPE_LABELS = {
+    'ALL': 'TẤT CẢ',
+    'A': 'A', 
+    'CNAME': 'CNAME',
+    'MX': 'MX',
+    'NS': 'NS',
+    'TXT': 'TXT'
+  };
+
+  let activeType = 'A';
+  RECORDS.forEach(t => {
+    const b = document.createElement('button');
+    b.textContent = TYPE_LABELS[t] || t;
+    b.className = 'dns-type-btn';
+    if (t === activeType) {
+      b.classList.add('active');
+    }
+    
+    b.addEventListener('click',()=>{
+      if (isRunning) return;
+      activeType = t;
+      [...typesWrap.children].forEach(c => c.classList.remove('active'));
+      b.classList.add('active');
+    });
+    typesWrap.appendChild(b);
+  });
+
+  // Domain count tracker với DPS colors
+  function updateDomainCount() {
+    const domains = ta.value.split(/\r?\n/)
+      .map(s=>extractHostname(s))
+      .filter(Boolean);
+    countEl.textContent = `${domains.length} tên miền`;
+    
+    if (domains.length > 100) {
+      countEl.style.background = 'rgba(220,38,38,0.9) !important';
+      countEl.style.color = 'white !important';
+    } else if (domains.length > 50) {
+      countEl.style.background = 'rgba(245,158,11,0.9) !important';
+      countEl.style.color = 'white !important';
+    } else if (domains.length > 0) {
+      countEl.style.background = 'rgba(50,181,97,0.9) !important';
+      countEl.style.color = 'white !important';
+    } else {
+      countEl.style.background = 'rgba(21,21,119,0.9) !important';
+      countEl.style.color = 'white !important';
+    }
+  }
+
+  ta.addEventListener('input', updateDomainCount);
+  updateDomainCount();
+
+  function clampDelay(){
+    let v = Number(delayInput.value || 0);
+    if (!Number.isFinite(v) || v < 50){
+      v = 50;
+      delayInput.value = String(v);
+      setStatus('⚠️ Độ trễ đã được đặt tối thiểu: 50ms');
+    }
+    return v;
+  }
+  delayInput.addEventListener('input', clampDelay);
+  delayInput.addEventListener('blur', clampDelay);
+  delayInput.addEventListener('keydown', (e)=>{
+    if (e.key === '-') e.preventDefault();
+  });
+
+  function extractHostname(input){
+    if(!input) return '';
+    try{ return new URL(input).hostname.replace(/\.$/,''); }
+    catch(e){ return String(input).trim().replace(/^https?:\/\//i,'').replace(/^\/*/,'').split('/')[0].split('?')[0].replace(/\.$/,''); }
+  }
+
+  function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+  function clearError(){ 
+    errorEl.style.display='none'; 
+    errorTextEl.textContent=''; 
+  }
+  function showError(msg){ 
+    errorEl.style.display='flex'; 
+    errorTextEl.textContent=msg; 
+  }
+  function setStatus(msg){ 
+    statusEl.textContent = msg; 
+  }
+
+  function updateProgress(current, total) {
+    if (total === 0) {
+      progressEl.style.display = 'none';
+      return;
+    }
+    progressEl.style.display = 'block';
+    const percentage = Math.min((current / total) * 100, 100);
+    progressBarEl.style.width = `${percentage}%`;
+  }
+
+  // Render table với DPS branding - Sử dụng div thay vì table elements
+  function ensureTable(){
+    if(resultsEl.firstChild && resultsEl.firstChild.classList && resultsEl.firstChild.classList.contains('dns-table')) return resultsEl.firstChild;
+    resultsEl.innerHTML = '';
+    const table = document.createElement('div');
+    table.className = 'dns-table';
+    
+    const isMobile = window.innerWidth < 768;
+    table.innerHTML = `<div class="dns-table-header-row">
+      <div class="dns-table-header">Tên Miền</div>
+      <div class="dns-table-header center">Loại</div>
+      <div class="dns-table-header ${isMobile ? 'mobile-hidden' : ''}">Tên</div>
+      <div class="dns-table-header center">TTL</div>
+      <div class="dns-table-header">Dữ Liệu</div>
+    </div><div class="dns-table-body"></div>`;
+    resultsEl.appendChild(table);
+    return table;
+  }
+
+  const allRows = [];
+  function appendRows(rows){
+    const table = ensureTable();
+    const tbody = table.querySelector('.dns-table-body');
+    const frag = document.createDocumentFragment();
+    const isMobile = window.innerWidth < 768;
+    
+    rows.forEach((r, i) => {
+      allRows.push(r);
+      const tr = document.createElement('div');
+      tr.className = 'dns-table-row';
+      
+      let dataColor = '#374151';
+      if (r.data === '(không có dữ liệu)') dataColor = '#9ca3af';
+      else if (r.data && r.data.startsWith('Lỗi:')) dataColor = '#dc2626';
+      
+      tr.innerHTML = `<div class="dns-table-cell">${r.domain}</div>
+        <div class="dns-table-cell center type">${r.type}</div>
+        <div class="dns-table-cell name ${isMobile ? 'mobile-hidden' : ''}">${r.name||''}</div>
+        <div class="dns-table-cell center ttl">${r.ttl??''}</div>
+        <div class="dns-table-cell data" style="color:${dataColor}">${r.data||''}</div>`;
+      frag.appendChild(tr);
+    });
+    tbody.appendChild(frag);
+    
+    btnCopy.disabled = false;
+    btnCopy.classList.remove('success');
+  }
+
+  async function queryDoH(domain, type){
+    const base = 'https://dns.google/resolve';
+    const params = new URLSearchParams();
+    params.set('name', domain);
+    params.set('type', TYPE_CODE[type]);
+    const url = `${base}?${params.toString()}`;
+    const res = await fetch(url, { headers: { 'Accept':'application/json' }});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  }
+
+  let abortFlag = false;
+  let isRunning = false;
+
+  btnStop.addEventListener('click', ()=>{ 
+    abortFlag = true; 
+    setStatus('🛑 Đang dừng...'); 
+  });
+
+  btnClear.addEventListener('click', () => {
+    if (isRunning) return;
+    resultsEl.innerHTML = `<div class="dns-empty-state">
+      <div class="dns-empty-icon">📊</div>
+      <div class="dns-empty-text">Sẵn sàng tra cứu bản ghi DNS...</div>
+      <div class="dns-empty-subtext">Được hỗ trợ bởi DPS.MEDIA</div>
+    </div>`;
+    allRows.length = 0;
+    btnCopy.disabled = true;
+    btnCopy.classList.remove('success');
+    clearError();
+    setStatus('');
+    progressEl.style.display = 'none';
+  });
+
+  btnRun.addEventListener('click', async ()=>{
+    if (isRunning) return;
+    
+    clearError(); 
+    allRows.length = 0; 
+    abortFlag = false;
+    isRunning = true;
+
+    btnRun.disabled = true;
+    runTextEl.textContent = '⏳ Đang chạy...';
+    btnStop.style.display = 'block';
+    btnClear.style.display = 'none';
+    
+    [...typesWrap.children].forEach(b => {
+      b.style.cursor = 'not-allowed';
+      b.style.opacity = '0.6';
+    });
+
+    const delay = clampDelay();
+
+    const domains = ta.value.split(/\r?\n/)
+      .map(s=>extractHostname(s))
+      .filter(Boolean);
+
+    if (!domains.length){ 
+      showError('Vui lòng nhập ít nhất 1 tên miền.'); 
+      resetUIState();
+      return; 
+    }
+    if (domains.length > 100){ 
+      showError('Giới hạn 100 tên miền mỗi lần để tránh quá tải. Hãy chia nhỏ danh sách.'); 
+      resetUIState();
+      return; 
+    }
+
+    const types = (activeType==='ALL') ? [...POPULAR] : [activeType];
+    const totalQueries = domains.length * types.length;
+
+    resultsEl.innerHTML = '';
+    ensureTable();
+
+    let completed = 0;
+    for (let i=0; i<domains.length && !abortFlag; i++){
+      const d = domains[i];
+      for (const t of types){
+        if (abortFlag) break;
+        try{
+          setStatus(`🔍 ${d} [${t}] (${completed + 1}/${totalQueries})`);
+          updateProgress(completed, totalQueries);
+          
+          const json = await queryDoH(d, t);
+          if (json && Array.isArray(json.Answer) && json.Answer.length > 0){
+            const rows = json.Answer.map(a=>({ domain:d, type:t, name:a.name, ttl:a.TTL, data:a.data }));
+            appendRows(rows);
+          } else if (json && Array.isArray(json.Authority) && json.Authority.length > 0){
+            const rows = json.Authority.map(a=>({ domain:d, type:t, name:a.name, ttl:a.TTL, data:a.data }));
+            appendRows(rows);
+          } else {
+            appendRows([{ domain:d, type:t, name:'', ttl:'', data:'(không có dữ liệu)' }]);
+          }
+        }catch(e){
+          appendRows([{ domain:d, type:t, name:'', ttl:'', data:`Lỗi: ${e.message}` }]);
+        }
+        completed++;
+        updateProgress(completed, totalQueries);
+        if (completed < totalQueries && !abortFlag) {
+          await sleep(delay);
+        }
+      }
+    }
+    
+    if (abortFlag) {
+      setStatus(`⏹️ Đã dừng (${completed}/${totalQueries})`);
+    } else {
+      setStatus(`✅ Hoàn thành! ${allRows.length} bản ghi từ ${domains.length} tên miền`);
+    }
+    
+    resetUIState();
+  });
+
+  function resetUIState() {
+    isRunning = false;
+    btnRun.disabled = false;
+    runTextEl.textContent = '🚀 Bắt Đầu';
+    btnStop.style.display = 'none';
+    btnClear.style.display = 'block';
+    progressEl.style.display = 'none';
+    
+    [...typesWrap.children].forEach(b => {
+      b.style.cursor = 'pointer';
+      b.style.opacity = '1';
+    });
+  }
+
+  function escapeCell(v){
+    if (v == null) return '';
+    const s = String(v);
+    return s.replace(/\t/g, ' ').replace(/\r?\n/g, ' ');
+  }
+  function rowsToTSV(rows){
+    const header = ['Tên Miền','Loại','Tên','TTL','Dữ Liệu'];
+    const lines = [header.join('\t')].concat(rows.map(r => [r.domain, r.type, r.name||'', r.ttl??'', r.data||''].map(escapeCell).join('\t')));
+    return lines.join('\n');
+  }
+  async function copyText(text){
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    }
+  }
+  btnCopy.addEventListener('click', async ()=>{
+    if (!allRows.length){ setStatus('❌ Không có dữ liệu để sao chép.'); return; }
+    try{
+      await copyText(rowsToTSV(allRows));
+      setStatus('✅ Đã sao chép bảng vào clipboard!');
+      
+      const originalText = btnCopy.textContent;
+      btnCopy.textContent = '✅ Đã sao chép!';
+      btnCopy.classList.add('success');
+      
+      setTimeout(() => {
+        btnCopy.textContent = originalText;
+        btnCopy.classList.remove('success');
+      }, 2000);
+    }catch(e){ 
+      setStatus('❌ Sao chép thất bại: ' + e.message); 
+    }
+  });
+
+  // Window resize handler
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      if (resultsEl.firstChild && resultsEl.firstChild.classList && resultsEl.firstChild.classList.contains('dns-table')) {
+        const currentRows = [...allRows];
+        allRows.length = 0;
+        resultsEl.innerHTML = '';
+        if (currentRows.length > 0) {
+          appendRows(currentRows);
+        }
+      }
+    }, 100);
+  });
+
+  // Initialize copy button state
+  btnCopy.disabled = true;
+})();
+</script>
+<!-- End DNS Bulk Lookup Widget - DPS.MEDIA -->
