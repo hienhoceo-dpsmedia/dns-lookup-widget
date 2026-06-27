@@ -11,6 +11,16 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 global $wpdb;
 
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}dps_dns_lookup_logs" );
+
+$wpdb->delete(
+	$wpdb->options,
+	array(
+		'option_name' => 'dps_dns_lookup_settings',
+	),
+	array( '%s' )
+);
+
 $wpdb->query(
 	$wpdb->prepare(
 		"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",

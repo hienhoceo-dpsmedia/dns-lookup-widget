@@ -1,6 +1,6 @@
 # DPS DNS Lookup Widget
 
-Standard WordPress plugin version of the original WPCode DNS bulk lookup snippet in `html.html`.
+Standard WordPress plugin version of the original WPCode DNS bulk lookup snippet in `html.html`, upgraded with multi-column DNS and server health checks.
 
 ## Usage
 
@@ -21,8 +21,9 @@ Optional attributes:
 - Large inline WPCode HTML/JS was converted into a WordPress plugin.
 - CSS and JavaScript are enqueued as static assets.
 - DNS lookups go through a WordPress REST endpoint.
-- Results are cached with transients for 10 minutes.
-- A lightweight IP-hash rate limit protects the public endpoint.
+- DNS, HTTP, and SSL checks go through a WordPress REST endpoint.
+- Results are cached with transients.
+- Admin settings control HTTP/SSL availability, rate limits, allow/block lists, and optional logs.
 - Shortcode output uses escaping, sanitization, and scoped classes.
 
 ## Verification
@@ -31,6 +32,8 @@ Run from the plugin root:
 
 ```bash
 php -l dps-dns-lookup-widget.php
+php -l includes/class-dps-dns-lookup-settings.php
+php -l includes/class-dps-dns-lookup-admin.php
 php -l includes/class-dps-dns-lookup-plugin.php
 php -l includes/class-dps-dns-lookup-rest.php
 php -l uninstall.php

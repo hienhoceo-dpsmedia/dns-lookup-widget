@@ -189,6 +189,10 @@
 	color: #ffffff;
 }
 
+.dps-dns-type-server {
+	border-style: dashed;
+}
+
 .dps-dns-type:disabled {
 	cursor: not-allowed;
 	opacity: 0.6;
@@ -350,6 +354,10 @@
 	min-width: 760px;
 }
 
+.dps-dns-table-pivot {
+	min-width: 840px;
+}
+
 .dps-dns-table-head,
 .dps-dns-table-row {
 	display: grid;
@@ -398,8 +406,79 @@
 	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+.dps-dns-cell-domain {
+	color: var(--dps-dns-ink);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-weight: 760;
+}
+
+.dps-dns-pivot-cell {
+	align-items: flex-start;
+	flex-direction: column;
+	gap: 4px;
+	justify-content: center;
+}
+
 .dps-dns-cell-error {
 	color: var(--dps-dns-danger);
+}
+
+.dps-dns-badge {
+	align-items: center;
+	border: 1px solid transparent;
+	border-radius: 999px;
+	display: inline-flex;
+	font-size: 11px;
+	font-weight: 800;
+	line-height: 1.1;
+	padding: 5px 8px;
+	width: fit-content;
+}
+
+.dps-dns-badge-success {
+	background: var(--dps-dns-green-soft);
+	border-color: rgba(44, 167, 90, 0.24);
+	color: #16633a;
+}
+
+.dps-dns-badge-warning {
+	background: #fff7df;
+	border-color: rgba(180, 83, 9, 0.24);
+	color: var(--dps-dns-warn);
+}
+
+.dps-dns-badge-error {
+	background: var(--dps-dns-danger-soft);
+	border-color: rgba(180, 35, 24, 0.24);
+	color: var(--dps-dns-danger);
+}
+
+.dps-dns-badge-neutral {
+	background: #eef2f7;
+	border-color: rgba(23, 32, 51, 0.1);
+	color: var(--dps-dns-muted);
+}
+
+.dps-dns-meta {
+	color: var(--dps-dns-muted);
+	font-size: 11px;
+	line-height: 1.35;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+
+.dps-dns-code-block {
+	background: var(--dps-dns-inset);
+	border: 1px solid rgba(23, 32, 51, 0.09);
+	border-radius: 6px;
+	color: var(--dps-dns-ink);
+	display: block;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 11px;
+	line-height: 1.35;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	padding: 4px 6px;
 }
 
 .dps-dns-footer {

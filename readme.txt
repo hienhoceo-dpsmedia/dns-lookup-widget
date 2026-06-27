@@ -1,14 +1,14 @@
 === DPS DNS Lookup Widget ===
 Contributors: dpsmedia
-Tags: dns, lookup, shortcode, tools, doh
+Tags: dns, lookup, ssl, http status, shortcode, tools, doh
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Fast bulk DNS lookup widget for WordPress, powered by a cached REST endpoint and shortcode.
+Fast bulk DNS and server health lookup widget for WordPress, powered by a cached REST endpoint and shortcode.
 
 == Description ==
 
@@ -18,10 +18,12 @@ Features:
 
 * Bulk DNS lookup from one domain per line.
 * URL-to-hostname extraction.
-* Record types: A, AAAA, CNAME, MX, NS, TXT, CAA, SOA, and ALL.
+* Multi-select pivot table: domains as rows and checks as columns.
+* Record types: A, AAAA, CNAME, MX, NS, TXT, CAA, and SOA.
+* Optional HTTP status and SSL certificate checks.
 * Cached WordPress REST proxy for better performance.
-* Lightweight public rate limiting.
-* Copy results as TSV.
+* Admin settings for server checks, rate limits, IP allow/block lists, and optional logs.
+* Copy pivot results as Excel-friendly TSV.
 * Responsive, scoped UI that avoids theme CSS collisions.
 
 == Installation ==
@@ -38,7 +40,11 @@ Basic:
 
 Optional attributes:
 
-`[dps_dns_lookup limit="100" delay="120" title="Tra Cuu DNS Hang Loat"]`
+`[dps_dns_lookup limit="100" delay="120" title="Tra Cuu DNS & Server Hang Loat"]`
+
+Legacy shortcode alias:
+
+`[dps_bulk_dns]`
 
 == Frequently Asked Questions ==
 
@@ -51,6 +57,13 @@ No. The browser calls a WordPress REST endpoint. WordPress validates the request
 Yes. The widget JavaScript calls a REST endpoint for live lookups, while static assets can be cached normally.
 
 == Changelog ==
+
+= 1.1.0 =
+
+* Added multi-select pivot table mode.
+* Added HTTP status and SSL certificate checks.
+* Added admin settings, allow/block lists, rate limit controls, and optional logs.
+* Added legacy `[dps_bulk_dns]` shortcode alias.
 
 = 1.0.0 =
 

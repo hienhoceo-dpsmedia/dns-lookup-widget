@@ -1,10 +1,11 @@
 (function () {
 	'use strict';
 
-	var POPULAR_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT'];
-	var RECORD_TYPES = ['ALL', 'A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'CAA', 'SOA'];
+	var COMMON_DNS_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT'];
+	var ADVANCED_DNS_TYPES = ['CAA', 'SOA'];
+	var SERVER_TYPES = ['HTTP', 'SSL'];
 	var TYPE_LABELS = {
-		ALL: 'ALL',
+		ALL: 'ALL DNS',
 		A: 'A',
 		AAAA: 'AAAA',
 		CNAME: 'CNAME',
@@ -12,7 +13,9 @@
 		NS: 'NS',
 		TXT: 'TXT',
 		CAA: 'CAA',
-		SOA: 'SOA'
+		SOA: 'SOA',
+		HTTP: 'HTTP',
+		SSL: 'SSL'
 	};
 
 	function DpsDnsLookupWidget(root) {
@@ -20,11 +23,13 @@
 		this.config = window.dpsDnsLookupConfig || {};
 		this.limit = parseInt(root.getAttribute('data-limit'), 10) || 100;
 		this.defaultDelay = parseInt(root.getAttribute('data-delay'), 10) || 120;
-		this.activeType = 'A';
+		this.activeTypes = {};
 		this.abort = false;
 		this.running = false;
-		this.rows = [];
+		this.tableData = [];
+		this.rowMap = {};
 		this.bindElements();
+		this.seedDefaultTypes();
 		this.renderTypes();
 		this.bindEvents();
 		this.updateDomainCount();
@@ -46,32 +51,90 @@
 		this.progress = this.root.querySelector('.dps-dns-progress span');
 	};
 
+	DpsDnsLookupWidget.prototype.seedDefaultTypes = function () {
+		this.activeTypes.A = true;
+		if (this.isToolEnabled('HTTP')) {
+			this.activeTypes.HTTP = true;
+		}
+		if (this.isToolEnabled('SSL')) {
+			this.activeTypes.SSL = true;
+		}
+	};
+
+	DpsDnsLookupWidget.prototype.isToolEnabled = function (type) {
+		if (SERVER_TYPES.indexOf(type) === -1) {
+			return true;
+		}
+
+		if (!this.config.enabledTools) {
+			return true;
+		}
+
+		return this.config.enabledTools[type] !== false;
+	};
+
+	DpsDnsLookupWidget.prototype.getAvailableTypes = function () {
+		var widget = this;
+		return ['ALL'].concat(COMMON_DNS_TYPES, ADVANCED_DNS_TYPES, SERVER_TYPES.filter(function (type) {
+			return widget.isToolEnabled(type);
+		}));
+	};
+
+	DpsDnsLookupWidget.prototype.getSelectedTypes = function () {
+		var order = COMMON_DNS_TYPES.concat(ADVANCED_DNS_TYPES, SERVER_TYPES);
+		var widget = this;
+		return order.filter(function (type) {
+			return Boolean(widget.activeTypes[type]) && widget.isToolEnabled(type);
+		});
+	};
+
 	DpsDnsLookupWidget.prototype.renderTypes = function () {
 		var widget = this;
+		var allCommonSelected = COMMON_DNS_TYPES.every(function (type) {
+			return Boolean(widget.activeTypes[type]);
+		});
+
 		this.types.textContent = '';
 
-		RECORD_TYPES.forEach(function (type) {
+		this.getAvailableTypes().forEach(function (type) {
 			var button = document.createElement('button');
+			var isActive = type === 'ALL' ? allCommonSelected : Boolean(widget.activeTypes[type]);
+
 			button.type = 'button';
 			button.className = 'dps-dns-type';
 			button.textContent = TYPE_LABELS[type] || type;
-			button.setAttribute('aria-pressed', type === widget.activeType ? 'true' : 'false');
+			button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
 
-			if (type === widget.activeType) {
+			if (isActive) {
 				button.classList.add('is-active');
+			}
+
+			if (SERVER_TYPES.indexOf(type) !== -1) {
+				button.classList.add('dps-dns-type-server');
 			}
 
 			button.addEventListener('click', function () {
 				if (widget.running) {
 					return;
 				}
-				widget.activeType = type;
-				Array.prototype.forEach.call(widget.types.children, function (child) {
-					child.classList.remove('is-active');
-					child.setAttribute('aria-pressed', 'false');
-				});
-				button.classList.add('is-active');
-				button.setAttribute('aria-pressed', 'true');
+
+				if (type === 'ALL') {
+					if (COMMON_DNS_TYPES.every(function (item) { return Boolean(widget.activeTypes[item]); })) {
+						COMMON_DNS_TYPES.forEach(function (item) {
+							delete widget.activeTypes[item];
+						});
+					} else {
+						COMMON_DNS_TYPES.forEach(function (item) {
+							widget.activeTypes[item] = true;
+						});
+					}
+				} else if (widget.activeTypes[type]) {
+					delete widget.activeTypes[type];
+				} else {
+					widget.activeTypes[type] = true;
+				}
+
+				widget.renderTypes();
 			});
 
 			widget.types.appendChild(button);
@@ -105,10 +168,9 @@
 		});
 
 		this.clearButton.addEventListener('click', function () {
-			if (widget.running) {
-				return;
+			if (!widget.running) {
+				widget.clearResults();
 			}
-			widget.clearResults();
 		});
 
 		this.copyButton.addEventListener('click', function () {
@@ -118,15 +180,15 @@
 
 	DpsDnsLookupWidget.prototype.extractHostname = function (value) {
 		var cleaned = String(value || '').trim();
-		var anchor;
+		var parsed;
 
 		if (!cleaned) {
 			return '';
 		}
 
 		try {
-			anchor = new URL(cleaned);
-			return anchor.hostname.replace(/\.$/, '').toLowerCase();
+			parsed = new URL(cleaned);
+			return parsed.hostname.replace(/\.$/, '').toLowerCase();
 		} catch (error) {
 			return cleaned
 				.replace(/^https?:\/\//i, '')
@@ -205,7 +267,8 @@
 	};
 
 	DpsDnsLookupWidget.prototype.clearResults = function () {
-		this.rows = [];
+		this.tableData = [];
+		this.rowMap = {};
 		this.copyButton.disabled = true;
 		this.showError('');
 		this.setStatus('');
@@ -224,9 +287,9 @@
 		icon.setAttribute('aria-hidden', 'true');
 		icon.textContent = 'Lookup';
 		title.className = 'dps-dns-empty-title';
-		title.textContent = 'San sang tra cuu DNS';
+		title.textContent = 'San sang tra cuu DNS & server';
 		copy.className = 'dps-dns-empty-copy';
-		copy.textContent = 'Ket qua se hien thi tai day sau khi chay cong cu.';
+		copy.textContent = 'Moi domain se la mot dong, moi loai kiem tra la mot cot.';
 
 		empty.appendChild(icon);
 		empty.appendChild(title);
@@ -235,85 +298,201 @@
 		this.results.appendChild(empty);
 	};
 
-	DpsDnsLookupWidget.prototype.ensureTable = function () {
-		var table;
-		var head;
-		var body;
+	DpsDnsLookupWidget.prototype.initPivotTable = function (domains, types) {
+		var widget = this;
+		var table = document.createElement('div');
+		var head = document.createElement('div');
+		var body = document.createElement('div');
+		var gridTemplate = 'minmax(170px, 1.25fr) ' + types.map(function () {
+			return 'minmax(190px, 1fr)';
+		}).join(' ');
 
-		table = this.results.querySelector('.dps-dns-table');
-		if (table) {
-			return table.querySelector('.dps-dns-table-body');
-		}
-
+		this.tableData = [];
+		this.rowMap = {};
 		this.results.textContent = '';
-		table = document.createElement('div');
-		table.className = 'dps-dns-table';
-		head = document.createElement('div');
+
+		table.className = 'dps-dns-table dps-dns-table-pivot';
 		head.className = 'dps-dns-table-head';
-		body = document.createElement('div');
+		head.style.gridTemplateColumns = gridTemplate;
 		body.className = 'dps-dns-table-body';
 
-		[
-			['Domain', ''],
-			['Type', ''],
-			['Name', 'dps-dns-head-name'],
-			['TTL', ''],
-			['Data', ''],
-			['Cache', 'dps-dns-head-cache']
-		].forEach(function (cell) {
-			var item = document.createElement('div');
-			item.className = 'dps-dns-table-cell ' + cell[1];
-			item.textContent = cell[0];
-			head.appendChild(item);
+		this.addHeaderCell(head, 'Domain');
+		types.forEach(function (type) {
+			widget.addHeaderCell(head, TYPE_LABELS[type] || type);
+		});
+
+		domains.forEach(function (domain) {
+			var row = document.createElement('div');
+			var domainCell = document.createElement('div');
+			var cells = {};
+			var dataRow = {
+				domain: domain,
+				results: {}
+			};
+
+			row.className = 'dps-dns-table-row';
+			row.style.gridTemplateColumns = gridTemplate;
+
+			domainCell.className = 'dps-dns-table-cell dps-dns-cell-domain';
+			domainCell.textContent = domain;
+			row.appendChild(domainCell);
+
+			types.forEach(function (type) {
+				var cell = document.createElement('div');
+				cell.className = 'dps-dns-table-cell dps-dns-pivot-cell';
+				widget.renderLoadingCell(cell);
+				row.appendChild(cell);
+				cells[type] = cell;
+				dataRow.results[type] = '';
+			});
+
+			widget.tableData.push(dataRow);
+			widget.rowMap[domain] = {
+				cells: cells,
+				data: dataRow
+			};
+			body.appendChild(row);
 		});
 
 		table.appendChild(head);
 		table.appendChild(body);
 		this.results.appendChild(table);
-
-		return body;
 	};
 
-	DpsDnsLookupWidget.prototype.appendRows = function (rows, cached) {
+	DpsDnsLookupWidget.prototype.addHeaderCell = function (head, label) {
+		var cell = document.createElement('div');
+		cell.className = 'dps-dns-table-cell';
+		cell.textContent = label;
+		head.appendChild(cell);
+	};
+
+	DpsDnsLookupWidget.prototype.renderLoadingCell = function (cell) {
+		cell.textContent = '';
+		var badge = document.createElement('span');
+		badge.className = 'dps-dns-badge dps-dns-badge-neutral';
+		badge.textContent = '...';
+		cell.appendChild(badge);
+	};
+
+	DpsDnsLookupWidget.prototype.renderLookupCell = function (cell, type, payload, cached) {
+		var rows = payload.rows || [];
+		var textValue = this.rowsToDisplayText(rows, type, cached);
+
+		cell.textContent = '';
+
+		if (!rows.length) {
+			this.appendBadge(cell, 'Empty', 'neutral');
+			return textValue;
+		}
+
+		if (type === 'HTTP') {
+			this.renderHttpCell(cell, rows[0], cached);
+			return textValue;
+		}
+
+		if (type === 'SSL') {
+			this.renderSslCell(cell, rows[0], cached);
+			return textValue;
+		}
+
+		this.renderDnsCell(cell, rows, cached);
+		return textValue;
+	};
+
+	DpsDnsLookupWidget.prototype.renderHttpCell = function (cell, row, cached) {
+		var code = parseInt(row.data, 10);
+		var tone = 'neutral';
+
+		if (code >= 200 && code < 300) {
+			tone = 'success';
+		} else if (code >= 300 && code < 400) {
+			tone = 'warning';
+		} else if (code >= 400 || String(row.data || '').toLowerCase() === 'error') {
+			tone = 'error';
+		}
+
+		this.appendBadge(cell, row.data || 'HTTP', tone);
+		if (row.detail) {
+			this.appendMeta(cell, row.detail);
+		}
+		if (cached) {
+			this.appendMeta(cell, 'cache');
+		}
+	};
+
+	DpsDnsLookupWidget.prototype.renderSslCell = function (cell, row, cached) {
+		var days = parseInt(row.data, 10);
+		var tone = 'success';
+
+		if (!Number.isFinite(days)) {
+			tone = 'error';
+		} else if (days < 0) {
+			tone = 'error';
+		} else if (days < 14) {
+			tone = 'warning';
+		}
+
+		this.appendBadge(cell, row.data || 'SSL', tone);
+		if (row.detail) {
+			this.appendMeta(cell, row.detail);
+		}
+		if (cached) {
+			this.appendMeta(cell, 'cache');
+		}
+	};
+
+	DpsDnsLookupWidget.prototype.renderDnsCell = function (cell, rows, cached) {
 		var widget = this;
-		var body = this.ensureTable();
-		var fragment = document.createDocumentFragment();
 
 		rows.forEach(function (row) {
-			var record = {
-				domain: row.domain || '',
-				type: row.type || '',
-				name: row.name || '',
-				ttl: row.ttl || '',
-				data: row.data || '',
-				cached: cached ? 'Yes' : 'No'
-			};
-			var tr = document.createElement('div');
-			tr.className = 'dps-dns-table-row';
+			var block = document.createElement('div');
+			block.className = 'dps-dns-code-block';
+			block.textContent = row.data || '(empty)';
+			cell.appendChild(block);
 
-			[
-				['domain', ''],
-				['type', 'dps-dns-cell-type'],
-				['name', 'dps-dns-cell-name'],
-				['ttl', 'dps-dns-cell-ttl'],
-				['data', 'dps-dns-cell-data'],
-				['cached', 'dps-dns-cell-cache']
-			].forEach(function (cell) {
-				var item = document.createElement('div');
-				item.className = 'dps-dns-table-cell ' + cell[1];
-				item.textContent = record[cell[0]];
-				if (cell[0] === 'data' && /^Error:/i.test(record.data)) {
-					item.classList.add('dps-dns-cell-error');
-				}
-				tr.appendChild(item);
-			});
-
-			widget.rows.push(record);
-			fragment.appendChild(tr);
+			if (row.ttl || row.name) {
+				widget.appendMeta(cell, [row.name, row.ttl ? 'TTL ' + String(row.ttl) : ''].filter(Boolean).join(' | '));
+			}
 		});
 
-		body.appendChild(fragment);
-		this.copyButton.disabled = this.rows.length === 0;
+		if (cached) {
+			this.appendMeta(cell, 'cache');
+		}
+	};
+
+	DpsDnsLookupWidget.prototype.appendBadge = function (cell, label, tone) {
+		var badge = document.createElement('span');
+		badge.className = 'dps-dns-badge dps-dns-badge-' + tone;
+		badge.textContent = label;
+		cell.appendChild(badge);
+	};
+
+	DpsDnsLookupWidget.prototype.appendMeta = function (cell, text) {
+		var meta = document.createElement('div');
+		meta.className = 'dps-dns-meta';
+		meta.textContent = text;
+		cell.appendChild(meta);
+	};
+
+	DpsDnsLookupWidget.prototype.rowsToDisplayText = function (rows, type, cached) {
+		var lines = [];
+
+		rows.forEach(function (row) {
+			var line = row.data || '';
+			if (row.detail) {
+				line += line ? '\n' + row.detail : row.detail;
+			}
+			if (type !== 'HTTP' && type !== 'SSL' && row.ttl) {
+				line += line ? '\nTTL: ' + String(row.ttl) : 'TTL: ' + String(row.ttl);
+			}
+			lines.push(line);
+		});
+
+		if (cached && lines.length) {
+			lines.push('cache');
+		}
+
+		return lines.join('\n');
 	};
 
 	DpsDnsLookupWidget.prototype.lookup = function (domain, type) {
@@ -353,6 +532,8 @@
 		var domain;
 		var type;
 		var result;
+		var cell;
+		var displayText;
 
 		if (this.running) {
 			return;
@@ -360,9 +541,15 @@
 
 		this.showError('');
 		domains = this.getDomains();
+		types = this.getSelectedTypes();
 
 		if (!domains.length) {
 			this.showError('Vui long nhap it nhat mot ten mien.');
+			return;
+		}
+
+		if (!types.length) {
+			this.showError('Vui long chon it nhat mot cot can kiem tra.');
 			return;
 		}
 
@@ -377,12 +564,10 @@
 		}
 
 		this.abort = false;
-		this.rows = [];
-		this.results.textContent = '';
 		this.copyButton.disabled = true;
 		delay = this.clampDelay();
-		types = this.activeType === 'ALL' ? POPULAR_TYPES.slice() : [this.activeType];
 		total = domains.length * types.length;
+		this.initPivotTable(domains, types);
 		this.setRunning(true);
 		this.setProgress(0, total);
 
@@ -390,26 +575,24 @@
 			domain = domains[i];
 			for (j = 0; j < types.length; j += 1) {
 				type = types[j];
+				cell = this.rowMap[domain].cells[type];
 
 				if (this.abort) {
 					break;
 				}
 
 				this.setStatus(domain + ' [' + type + '] ' + String(done + 1) + '/' + String(total));
+				this.renderLoadingCell(cell);
 
 				try {
 					result = await this.lookup(domain, type);
-					this.appendRows(result.rows || [], Boolean(result.cached));
+					displayText = this.renderLookupCell(cell, type, result, Boolean(result.cached));
+					this.rowMap[domain].data.results[type] = displayText;
 				} catch (error) {
-					this.appendRows([
-						{
-							domain: domain,
-							type: type,
-							name: '',
-							ttl: '',
-							data: 'Error: ' + error.message
-						}
-					], false);
+					cell.textContent = '';
+					this.appendBadge(cell, 'Error', 'error');
+					this.appendMeta(cell, error.message);
+					this.rowMap[domain].data.results[type] = 'Error: ' + error.message;
 				}
 
 				done += 1;
@@ -428,26 +611,31 @@
 		if (this.abort) {
 			this.setStatus('Da dung tai ' + String(done) + '/' + String(total) + '.');
 		} else {
-			this.setStatus('Hoan thanh: ' + String(this.rows.length) + ' dong ket qua.');
+			this.setStatus('Hoan thanh: ' + String(domains.length) + ' domain x ' + String(types.length) + ' cot.');
 		}
 
+		this.copyButton.disabled = this.tableData.length === 0;
 		this.setRunning(false);
 	};
 
 	DpsDnsLookupWidget.prototype.rowsToTsv = function () {
-		var lines = [['Domain', 'Type', 'Name', 'TTL', 'Data', 'Cache'].join('\t')];
-		this.rows.forEach(function (row) {
-			lines.push([
-				row.domain,
-				row.type,
-				row.name,
-				row.ttl,
-				row.data,
-				row.cached
-			].map(function (value) {
-				return String(value == null ? '' : value).replace(/\t/g, ' ').replace(/\r?\n/g, ' ');
+		var selectedTypes = this.getSelectedTypes();
+		var lines = [['Domain'].concat(selectedTypes).join('\t')];
+
+		this.tableData.forEach(function (row) {
+			var cells = [row.domain];
+			selectedTypes.forEach(function (type) {
+				cells.push(row.results[type] || '');
+			});
+			lines.push(cells.map(function (value) {
+				var text = String(value == null ? '' : value);
+				if (text.indexOf('\n') !== -1 || text.indexOf('\t') !== -1 || text.indexOf('"') !== -1) {
+					return '"' + text.replace(/"/g, '""') + '"';
+				}
+				return text;
 			}).join('\t'));
 		});
+
 		return lines.join('\n');
 	};
 
@@ -455,7 +643,7 @@
 		var widget = this;
 		var text = this.rowsToTsv();
 
-		if (!this.rows.length) {
+		if (!this.tableData.length) {
 			this.setStatus('Khong co du lieu de sao chep.');
 			return;
 		}

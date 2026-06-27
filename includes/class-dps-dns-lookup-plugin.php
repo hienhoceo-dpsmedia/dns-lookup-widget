@@ -35,6 +35,13 @@ final class DPS_DNS_Lookup_Plugin {
 	private $rest_controller;
 
 	/**
+	 * Admin controller.
+	 *
+	 * @var DPS_DNS_Lookup_Admin
+	 */
+	private $admin_controller;
+
+	/**
 	 * Get singleton instance.
 	 *
 	 * @return self
@@ -52,10 +59,12 @@ final class DPS_DNS_Lookup_Plugin {
 	 */
 	private function __construct() {
 		$this->rest_controller = new DPS_DNS_Lookup_REST();
+		$this->admin_controller = new DPS_DNS_Lookup_Admin();
 
 		add_action( 'init', array( $this, 'register_assets' ) );
 		add_action( 'init', array( $this, 'register_shortcode' ) );
 		add_action( 'rest_api_init', array( $this->rest_controller, 'register_routes' ) );
+		$this->admin_controller->hooks();
 	}
 
 	/**
@@ -87,6 +96,7 @@ final class DPS_DNS_Lookup_Plugin {
 	 */
 	public function register_shortcode() {
 		add_shortcode( 'dps_dns_lookup', array( $this, 'render_shortcode' ) );
+		add_shortcode( 'dps_bulk_dns', array( $this, 'render_shortcode' ) );
 	}
 
 	/**
@@ -98,9 +108,9 @@ final class DPS_DNS_Lookup_Plugin {
 	public function render_shortcode( $atts ) {
 		$atts = shortcode_atts(
 			array(
-				'title'       => __( 'Tra Cuu DNS Hang Loat', 'dps-dns-lookup-widget' ),
+				'title'       => __( 'Tra Cuu DNS & Server Hang Loat', 'dps-dns-lookup-widget' ),
 				'subtitle'    => __( 'Cong cu chuyen nghiep tu DPS.MEDIA', 'dps-dns-lookup-widget' ),
-				'description' => __( 'Nhap moi ten mien mot dong. Ban co the dan URL, widget se tu tach hostname.', 'dps-dns-lookup-widget' ),
+				'description' => __( 'Nhap moi ten mien mot dong, chon nhieu cot can kiem tra, roi copy ket qua dang TSV.', 'dps-dns-lookup-widget' ),
 				'brand'       => 'DPS.MEDIA',
 				'limit'       => '100',
 				'delay'       => '120',
@@ -128,8 +138,9 @@ final class DPS_DNS_Lookup_Plugin {
 			'dps-dns-lookup-widget',
 			'window.dpsDnsLookupConfig = window.dpsDnsLookupConfig || ' . wp_json_encode(
 				array(
-					'restUrl' => esc_url_raw( rest_url( 'dps-dns-lookup/v1/lookup' ) ),
-					'nonce'   => wp_create_nonce( 'dps_dns_lookup' ),
+					'restUrl'      => esc_url_raw( rest_url( 'dps-dns-lookup/v1/lookup' ) ),
+					'nonce'        => wp_create_nonce( 'dps_dns_lookup' ),
+					'enabledTools' => $this->get_enabled_tools(),
 				)
 			) . ';',
 			'before'
@@ -146,7 +157,7 @@ final class DPS_DNS_Lookup_Plugin {
 		>
 			<div class="dps-dns-shell">
 				<div class="dps-dns-header">
-					<div class="dps-dns-header-mark" aria-hidden="true">DNS</div>
+					<div class="dps-dns-header-mark" aria-hidden="true">DPS</div>
 					<div class="dps-dns-header-copy">
 						<div class="dps-dns-title"><?php echo esc_html( sanitize_text_field( $atts['title'] ) ); ?></div>
 						<div class="dps-dns-subtitle"><?php echo esc_html( sanitize_text_field( $atts['subtitle'] ) ); ?></div>
@@ -167,8 +178,8 @@ final class DPS_DNS_Lookup_Plugin {
 
 					<div class="dps-dns-control-panel">
 						<div class="dps-dns-control-group">
-							<div class="dps-dns-label"><?php esc_html_e( 'Loai ban ghi', 'dps-dns-lookup-widget' ); ?></div>
-							<div class="dps-dns-types" role="group" aria-label="<?php esc_attr_e( 'Chon loai ban ghi DNS', 'dps-dns-lookup-widget' ); ?>"></div>
+							<div class="dps-dns-label"><?php esc_html_e( 'Cot can kiem tra', 'dps-dns-lookup-widget' ); ?></div>
+							<div class="dps-dns-types" role="group" aria-label="<?php esc_attr_e( 'Chon cac cot kiem tra DNS va server', 'dps-dns-lookup-widget' ); ?>"></div>
 						</div>
 
 						<div class="dps-dns-control-row">
@@ -196,8 +207,8 @@ final class DPS_DNS_Lookup_Plugin {
 				<div class="dps-dns-results" aria-live="polite">
 					<div class="dps-dns-empty">
 						<div class="dps-dns-empty-icon" aria-hidden="true">Lookup</div>
-						<div class="dps-dns-empty-title"><?php esc_html_e( 'San sang tra cuu DNS', 'dps-dns-lookup-widget' ); ?></div>
-						<div class="dps-dns-empty-copy"><?php esc_html_e( 'Ket qua se hien thi tai day sau khi chay cong cu.', 'dps-dns-lookup-widget' ); ?></div>
+						<div class="dps-dns-empty-title"><?php esc_html_e( 'San sang tra cuu DNS & server', 'dps-dns-lookup-widget' ); ?></div>
+						<div class="dps-dns-empty-copy"><?php esc_html_e( 'Moi domain se la mot dong, moi loai kiem tra la mot cot.', 'dps-dns-lookup-widget' ); ?></div>
 					</div>
 				</div>
 
@@ -209,5 +220,19 @@ final class DPS_DNS_Lookup_Plugin {
 		</div>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Get enabled frontend tools.
+	 *
+	 * @return array<string,bool>
+	 */
+	private function get_enabled_tools() {
+		$options = DPS_DNS_Lookup_Settings::get();
+
+		return array(
+			'HTTP' => ! empty( $options['enable_http'] ),
+			'SSL'  => ! empty( $options['enable_ssl'] ),
+		);
 	}
 }
