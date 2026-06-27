@@ -13,7 +13,7 @@ Install the plugin folder in WordPress and add this shortcode to a post, page, o
 Optional attributes:
 
 ```text
-[dps_dns_lookup limit="100" delay="120" title="Tra Cuu DNS Hang Loat"]
+[dps_dns_lookup limit="100" delay="120" title="Tra Cứu DNS Hàng Loạt"]
 ```
 
 ## What Changed From The Snippet

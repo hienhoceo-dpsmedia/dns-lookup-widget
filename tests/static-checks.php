@@ -53,7 +53,8 @@ $checks = array(
 	'No external CDN references' => false === strpos( $js . $css . $plugin, 'cdn.' ),
 	'CSS scoped to widget root' => false !== strpos( $css, '.dps-dns-widget' ),
 	'JS initializes widget instances' => false !== strpos( $js, 'DpsDnsLookupWidget' ),
-	'Readme has stable tag' => false !== strpos( $readme, 'Stable tag: 1.1.0' ),
+	'Nonce refresh route exists' => false !== strpos( $rest, "'/nonce'" ) && false !== strpos( $js, 'refreshNonce' ),
+	'Readme has stable tag' => false !== strpos( $readme, 'Stable tag: 1.1.1' ),
 );
 
 foreach ( $checks as $label => $passed ) {

@@ -4,7 +4,7 @@ Tags: dns, lookup, ssl, http status, shortcode, tools, doh
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -40,7 +40,7 @@ Basic:
 
 Optional attributes:
 
-`[dps_dns_lookup limit="100" delay="120" title="Tra Cuu DNS & Server Hang Loat"]`
+`[dps_dns_lookup limit="100" delay="120" title="Tra Cứu DNS & Server Hàng Loạt"]`
 
 Legacy shortcode alias:
 
@@ -57,6 +57,11 @@ No. The browser calls a WordPress REST endpoint. WordPress validates the request
 Yes. The widget JavaScript calls a REST endpoint for live lookups, while static assets can be cached normally.
 
 == Changelog ==
+
+= 1.1.1 =
+
+* Fixed stale REST nonce errors on cached pages by refreshing the nonce and retrying once.
+* Restored Vietnamese UI text with proper diacritics.
 
 = 1.1.0 =
 

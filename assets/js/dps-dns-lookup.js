@@ -164,7 +164,7 @@
 
 		this.stopButton.addEventListener('click', function () {
 			widget.abort = true;
-			widget.setStatus('Dang dung...');
+			widget.setStatus('Đang dừng...');
 		});
 
 		this.clearButton.addEventListener('click', function () {
@@ -287,9 +287,9 @@
 		icon.setAttribute('aria-hidden', 'true');
 		icon.textContent = 'Lookup';
 		title.className = 'dps-dns-empty-title';
-		title.textContent = 'San sang tra cuu DNS & server';
+		title.textContent = 'Sẵn sàng tra cứu DNS & server';
 		copy.className = 'dps-dns-empty-copy';
-		copy.textContent = 'Moi domain se la mot dong, moi loai kiem tra la mot cot.';
+		copy.textContent = 'Mỗi domain là một dòng, mỗi loại kiểm tra là một cột.';
 
 		empty.appendChild(icon);
 		empty.appendChild(title);
@@ -495,7 +495,31 @@
 		return lines.join('\n');
 	};
 
-	DpsDnsLookupWidget.prototype.lookup = function (domain, type) {
+	DpsDnsLookupWidget.prototype.refreshNonce = function () {
+		var widget = this;
+
+		if (!this.config.nonceUrl) {
+			return Promise.reject(new Error('Thiếu endpoint làm mới phiên bảo mật.'));
+		}
+
+		return window.fetch(this.config.nonceUrl, {
+			method: 'GET',
+			credentials: 'same-origin',
+			cache: 'no-store'
+		}).then(function (response) {
+			return response.json().then(function (payload) {
+				if (!response.ok || !payload || !payload.nonce) {
+					throw new Error('Không thể làm mới phiên bảo mật.');
+				}
+				widget.config.nonce = payload.nonce;
+				window.dpsDnsLookupConfig = widget.config;
+				return payload.nonce;
+			});
+		});
+	};
+
+	DpsDnsLookupWidget.prototype.lookup = function (domain, type, didRefreshNonce) {
+		var widget = this;
 		var form = new window.FormData();
 		form.append('domain', domain);
 		form.append('type', type);
@@ -504,10 +528,16 @@
 		return window.fetch(this.config.restUrl, {
 			method: 'POST',
 			credentials: 'same-origin',
+			cache: 'no-store',
 			body: form
 		}).then(function (response) {
 			return response.json().then(function (payload) {
 				if (!response.ok) {
+					if (payload && payload.code === 'dps_dns_lookup_bad_nonce' && !didRefreshNonce) {
+						return widget.refreshNonce().then(function () {
+							return widget.lookup(domain, type, true);
+						});
+					}
 					throw new Error(payload && payload.message ? payload.message : 'Lookup failed');
 				}
 				return payload;
@@ -544,22 +574,22 @@
 		types = this.getSelectedTypes();
 
 		if (!domains.length) {
-			this.showError('Vui long nhap it nhat mot ten mien.');
+			this.showError('Vui lòng nhập ít nhất một tên miền.');
 			return;
 		}
 
 		if (!types.length) {
-			this.showError('Vui long chon it nhat mot cot can kiem tra.');
+			this.showError('Vui lòng chọn ít nhất một cột cần kiểm tra.');
 			return;
 		}
 
 		if (domains.length > this.limit) {
-			this.showError('Danh sach vuot gioi han ' + String(this.limit) + ' ten mien. Hay chia nho danh sach.');
+			this.showError('Danh sách vượt giới hạn ' + String(this.limit) + ' tên miền. Hãy chia nhỏ danh sách.');
 			return;
 		}
 
 		if (!this.config.restUrl) {
-			this.showError('Thieu cau hinh REST endpoint.');
+			this.showError('Thiếu cấu hình REST endpoint.');
 			return;
 		}
 
@@ -609,9 +639,9 @@
 		}
 
 		if (this.abort) {
-			this.setStatus('Da dung tai ' + String(done) + '/' + String(total) + '.');
+			this.setStatus('Đã dừng tại ' + String(done) + '/' + String(total) + '.');
 		} else {
-			this.setStatus('Hoan thanh: ' + String(domains.length) + ' domain x ' + String(types.length) + ' cot.');
+			this.setStatus('Hoàn thành: ' + String(domains.length) + ' domain x ' + String(types.length) + ' cột.');
 		}
 
 		this.copyButton.disabled = this.tableData.length === 0;
@@ -644,17 +674,17 @@
 		var text = this.rowsToTsv();
 
 		if (!this.tableData.length) {
-			this.setStatus('Khong co du lieu de sao chep.');
+			this.setStatus('Không có dữ liệu để sao chép.');
 			return;
 		}
 
 		function done() {
-			widget.setStatus('Da sao chep TSV vao clipboard.');
+			widget.setStatus('Đã sao chép TSV vào clipboard.');
 		}
 
 		if (window.navigator.clipboard && window.navigator.clipboard.writeText) {
 			window.navigator.clipboard.writeText(text).then(done).catch(function (error) {
-				widget.setStatus('Sao chep that bai: ' + error.message);
+				widget.setStatus('Sao chép thất bại: ' + error.message);
 			});
 			return;
 		}

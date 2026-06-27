@@ -68,6 +68,29 @@ final class DPS_DNS_Lookup_REST {
 				),
 			)
 		);
+
+		register_rest_route(
+			'dps-dns-lookup/v1',
+			'/nonce',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'nonce' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+	}
+
+	/**
+	 * Return a fresh public nonce for cached pages.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function nonce() {
+		return rest_ensure_response(
+			array(
+				'nonce' => wp_create_nonce( 'dps_dns_lookup' ),
+			)
+		);
 	}
 
 	/**
@@ -81,7 +104,7 @@ final class DPS_DNS_Lookup_REST {
 		if ( ! wp_verify_nonce( $nonce, 'dps_dns_lookup' ) ) {
 			return new WP_Error(
 				'dps_dns_lookup_bad_nonce',
-				__( 'Security check failed. Please refresh the page and try again.', 'dps-dns-lookup-widget' ),
+				__( 'Phiên bảo mật đã hết hạn. Công cụ đang thử làm mới, vui lòng chạy lại nếu lỗi còn xuất hiện.', 'dps-dns-lookup-widget' ),
 				array( 'status' => 403 )
 			);
 		}

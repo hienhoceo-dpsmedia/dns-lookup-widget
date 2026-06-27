@@ -108,9 +108,9 @@ final class DPS_DNS_Lookup_Plugin {
 	public function render_shortcode( $atts ) {
 		$atts = shortcode_atts(
 			array(
-				'title'       => __( 'Tra Cuu DNS & Server Hang Loat', 'dps-dns-lookup-widget' ),
-				'subtitle'    => __( 'Cong cu chuyen nghiep tu DPS.MEDIA', 'dps-dns-lookup-widget' ),
-				'description' => __( 'Nhap moi ten mien mot dong, chon nhieu cot can kiem tra, roi copy ket qua dang TSV.', 'dps-dns-lookup-widget' ),
+				'title'       => __( 'Tra Cứu DNS & Server Hàng Loạt', 'dps-dns-lookup-widget' ),
+				'subtitle'    => __( 'Công cụ chuyên nghiệp từ DPS.MEDIA', 'dps-dns-lookup-widget' ),
+				'description' => __( 'Nhập mỗi tên miền một dòng, chọn nhiều cột cần kiểm tra, rồi copy kết quả dạng TSV.', 'dps-dns-lookup-widget' ),
 				'brand'       => 'DPS.MEDIA',
 				'limit'       => '100',
 				'delay'       => '120',
@@ -139,6 +139,7 @@ final class DPS_DNS_Lookup_Plugin {
 			'window.dpsDnsLookupConfig = window.dpsDnsLookupConfig || ' . wp_json_encode(
 				array(
 					'restUrl'      => esc_url_raw( rest_url( 'dps-dns-lookup/v1/lookup' ) ),
+					'nonceUrl'     => esc_url_raw( rest_url( 'dps-dns-lookup/v1/nonce' ) ),
 					'nonce'        => wp_create_nonce( 'dps_dns_lookup' ),
 					'enabledTools' => $this->get_enabled_tools(),
 				)
@@ -169,7 +170,7 @@ final class DPS_DNS_Lookup_Plugin {
 
 				<div class="dps-dns-workbench">
 					<div class="dps-dns-input-panel">
-						<label class="dps-dns-label" for="<?php echo esc_attr( $instance_id ); ?>-domains"><?php esc_html_e( 'Danh sach ten mien', 'dps-dns-lookup-widget' ); ?></label>
+						<label class="dps-dns-label" for="<?php echo esc_attr( $instance_id ); ?>-domains"><?php esc_html_e( 'Danh sách tên miền', 'dps-dns-lookup-widget' ); ?></label>
 						<div class="dps-dns-textarea-wrap">
 							<textarea id="<?php echo esc_attr( $instance_id ); ?>-domains" class="dps-dns-textarea" rows="7" spellcheck="false" placeholder="dps.media&#10;example.com&#10;https://sub.domain.com/path"></textarea>
 							<div class="dps-dns-count" aria-live="polite">0</div>
@@ -178,27 +179,27 @@ final class DPS_DNS_Lookup_Plugin {
 
 					<div class="dps-dns-control-panel">
 						<div class="dps-dns-control-group">
-							<div class="dps-dns-label"><?php esc_html_e( 'Cot can kiem tra', 'dps-dns-lookup-widget' ); ?></div>
-							<div class="dps-dns-types" role="group" aria-label="<?php esc_attr_e( 'Chon cac cot kiem tra DNS va server', 'dps-dns-lookup-widget' ); ?>"></div>
+							<div class="dps-dns-label"><?php esc_html_e( 'Cột cần kiểm tra', 'dps-dns-lookup-widget' ); ?></div>
+							<div class="dps-dns-types" role="group" aria-label="<?php esc_attr_e( 'Chọn các cột kiểm tra DNS và server', 'dps-dns-lookup-widget' ); ?>"></div>
 						</div>
 
 						<div class="dps-dns-control-row">
 							<label class="dps-dns-delay">
-								<span class="dps-dns-label"><?php esc_html_e( 'Do tre', 'dps-dns-lookup-widget' ); ?></span>
+								<span class="dps-dns-label"><?php esc_html_e( 'Độ trễ', 'dps-dns-lookup-widget' ); ?></span>
 								<span class="dps-dns-delay-input">
 									<input class="dps-dns-delay-field" type="number" min="50" max="5000" step="10" value="<?php echo esc_attr( (string) $delay ); ?>">
 									<span>ms</span>
 								</span>
 							</label>
-							<button class="dps-dns-button dps-dns-button-primary" type="button" data-action="run"><?php esc_html_e( 'Bat dau', 'dps-dns-lookup-widget' ); ?></button>
-							<button class="dps-dns-button dps-dns-button-danger" type="button" data-action="stop" hidden><?php esc_html_e( 'Dung', 'dps-dns-lookup-widget' ); ?></button>
+							<button class="dps-dns-button dps-dns-button-primary" type="button" data-action="run"><?php esc_html_e( 'Bắt đầu', 'dps-dns-lookup-widget' ); ?></button>
+							<button class="dps-dns-button dps-dns-button-danger" type="button" data-action="stop" hidden><?php esc_html_e( 'Dừng', 'dps-dns-lookup-widget' ); ?></button>
 						</div>
 					</div>
 				</div>
 
 				<div class="dps-dns-toolbar">
-					<button class="dps-dns-tool-button" type="button" data-action="copy" disabled><?php esc_html_e( 'Sao chep TSV', 'dps-dns-lookup-widget' ); ?></button>
-					<button class="dps-dns-tool-button" type="button" data-action="clear"><?php esc_html_e( 'Xoa ket qua', 'dps-dns-lookup-widget' ); ?></button>
+					<button class="dps-dns-tool-button" type="button" data-action="copy" disabled><?php esc_html_e( 'Sao chép TSV', 'dps-dns-lookup-widget' ); ?></button>
+					<button class="dps-dns-tool-button" type="button" data-action="clear"><?php esc_html_e( 'Xóa kết quả', 'dps-dns-lookup-widget' ); ?></button>
 					<div class="dps-dns-progress" aria-hidden="true"><span></span></div>
 					<div class="dps-dns-status" aria-live="polite"></div>
 				</div>
@@ -207,13 +208,13 @@ final class DPS_DNS_Lookup_Plugin {
 				<div class="dps-dns-results" aria-live="polite">
 					<div class="dps-dns-empty">
 						<div class="dps-dns-empty-icon" aria-hidden="true">Lookup</div>
-						<div class="dps-dns-empty-title"><?php esc_html_e( 'San sang tra cuu DNS & server', 'dps-dns-lookup-widget' ); ?></div>
-						<div class="dps-dns-empty-copy"><?php esc_html_e( 'Moi domain se la mot dong, moi loai kiem tra la mot cot.', 'dps-dns-lookup-widget' ); ?></div>
+						<div class="dps-dns-empty-title"><?php esc_html_e( 'Sẵn sàng tra cứu DNS & server', 'dps-dns-lookup-widget' ); ?></div>
+						<div class="dps-dns-empty-copy"><?php esc_html_e( 'Mỗi domain là một dòng, mỗi loại kiểm tra là một cột.', 'dps-dns-lookup-widget' ); ?></div>
 					</div>
 				</div>
 
 				<div class="dps-dns-footer">
-					<span><?php esc_html_e( 'Phat trien boi', 'dps-dns-lookup-widget' ); ?></span>
+					<span><?php esc_html_e( 'Phát triển bởi', 'dps-dns-lookup-widget' ); ?></span>
 					<a href="https://dps.media/" target="_blank" rel="noopener noreferrer">DPS.MEDIA</a>
 				</div>
 			</div>
