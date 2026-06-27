@@ -1,0 +1,49 @@
+name: Build and Release WordPress Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Zip Archive
+        run: |
+          # Define plugin slug
+          SLUG="dps-dns-lookup-widget"
+          
+          # Create temporary packaging directory
+          mkdir -p build/$SLUG
+          
+          # Copy only required production files
+          cp -r assets build/$SLUG/
+          cp -r includes build/$SLUG/
+          cp dps-dns-lookup-widget.php build/$SLUG/
+          cp readme.txt build/$SLUG/
+          cp uninstall.php build/$SLUG/
+          cp LICENSE build/$SLUG/
+          
+          # Navigate to build directory and zip the folder
+          cd build
+          zip -r ../$SLUG.zip $SLUG
+          cd ..
+          
+          # Clean up build directory
+          rm -rf build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dps-dns-lookup-widget.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true

@@ -4,7 +4,7 @@ Tags: dns, lookup, ssl, http status, shortcode, tools, doh
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.5
+Stable tag: 1.1.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,6 +57,11 @@ No. The browser calls a WordPress REST endpoint. WordPress validates the request
 Yes. The widget JavaScript calls a REST endpoint for live lookups, while static assets can be cached normally.
 
 == Changelog ==
+
+= 1.1.6 =
+
+* Set up official automated build & release pipeline via GitHub Actions.
+* Fixed zip file extraction compatibilities for standard WordPress plugin uploads.
 
 = 1.1.5 =
 
