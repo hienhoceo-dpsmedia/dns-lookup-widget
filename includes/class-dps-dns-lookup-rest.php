@@ -34,7 +34,7 @@ final class DPS_DNS_Lookup_REST {
 	 *
 	 * @var array<int,string>
 	 */
-	private const SERVER_TYPES = array( 'HTTP', 'SSL' );
+	private const SERVER_TYPES = array( 'HTTP', 'SERVER', 'SSL' );
 
 	/**
 	 * Register REST routes.
@@ -241,7 +241,7 @@ final class DPS_DNS_Lookup_REST {
 	private function check_type_enabled( $type ) {
 		$options = DPS_DNS_Lookup_Settings::get();
 
-		if ( 'HTTP' === $type && empty( $options['enable_http'] ) ) {
+		if ( ( 'HTTP' === $type || 'SERVER' === $type ) && empty( $options['enable_http'] ) ) {
 			return new WP_Error( 'dps_dns_lookup_http_disabled', __( 'HTTP checks are disabled by the site administrator.', 'dps-dns-lookup-widget' ), array( 'status' => 403 ) );
 		}
 
@@ -310,6 +310,10 @@ final class DPS_DNS_Lookup_REST {
 			return $this->query_http( $domain );
 		}
 
+		if ( 'SERVER' === $type ) {
+			return $this->query_server( $domain );
+		}
+
 		if ( 'SSL' === $type ) {
 			return $this->query_ssl( $domain );
 		}
@@ -324,7 +328,7 @@ final class DPS_DNS_Lookup_REST {
 	 * @return int
 	 */
 	private function cache_ttl( $type ) {
-		if ( 'HTTP' === $type ) {
+		if ( 'HTTP' === $type || 'SERVER' === $type ) {
 			return 2 * MINUTE_IN_SECONDS;
 		}
 
@@ -387,12 +391,10 @@ final class DPS_DNS_Lookup_REST {
 		$records = array();
 		if ( ! empty( $body['Answer'] ) && is_array( $body['Answer'] ) ) {
 			$records = $body['Answer'];
-		} elseif ( ! empty( $body['Authority'] ) && is_array( $body['Authority'] ) ) {
-			$records = $body['Authority'];
 		}
 
 		if ( empty( $records ) ) {
-			return array( $this->make_row( $domain, $type, '', '', __( '(no data)', 'dps-dns-lookup-widget' ), '' ) );
+			return array( $this->make_row( $domain, $type, '', '', '', '' ) );
 		}
 
 		$rows = array();
@@ -409,6 +411,8 @@ final class DPS_DNS_Lookup_REST {
 				isset( $record['data'] ) ? sanitize_text_field( (string) $record['data'] ) : '',
 				''
 			);
+
+			break;
 		}
 
 		return $rows;
@@ -421,28 +425,32 @@ final class DPS_DNS_Lookup_REST {
 	 * @return array<int,array<string,string|int>>|WP_Error
 	 */
 	private function query_http( $domain ) {
-		$url = 'https://' . $domain . '/';
-
-		$remote = wp_safe_remote_head(
-			esc_url_raw( $url ),
-			array(
-				'timeout'     => 10,
-				'redirection' => 3,
-				'sslverify'   => true,
-				'user-agent'  => 'DPS DNS Lookup Widget/' . DPS_DNS_LOOKUP_WIDGET_VERSION . '; ' . home_url( '/' ),
-			)
-		);
+		$remote = $this->query_http_head( $domain );
 
 		if ( is_wp_error( $remote ) ) {
-			return array( $this->make_row( $domain, 'HTTP', '', '', 'Error', $remote->get_error_message() ) );
+			return array( $this->make_row( $domain, 'HTTP', '', '', '', '' ) );
 		}
 
-		$code    = (int) wp_remote_retrieve_response_code( $remote );
-		$message = sanitize_text_field( wp_remote_retrieve_response_message( $remote ) );
-		$server  = sanitize_text_field( (string) wp_remote_retrieve_header( $remote, 'server' ) );
-		$data    = trim( $code . ' ' . $message );
+		$code = (int) wp_remote_retrieve_response_code( $remote );
+		$data = $code > 0 ? (string) $code : '';
 
-		return array( $this->make_row( $domain, 'HTTP', '', '', $data, $server ) );
+		return array( $this->make_row( $domain, 'HTTP', '', '', $data, '' ) );
+	}
+
+	/**
+	 * Query server software or edge provider.
+	 *
+	 * @param string $domain Domain.
+	 * @return array<int,array<string,string|int>>
+	 */
+	private function query_server( $domain ) {
+		$remote = $this->query_http_head( $domain );
+
+		if ( is_wp_error( $remote ) ) {
+			return array( $this->make_row( $domain, 'SERVER', '', '', '', '' ) );
+		}
+
+		return array( $this->make_row( $domain, 'SERVER', '', '', $this->detect_server_type( $remote ), '' ) );
 	}
 
 	/**
@@ -486,20 +494,61 @@ final class DPS_DNS_Lookup_REST {
 		}
 
 		$days_left = (int) floor( ( (int) $cert['validTo_time_t'] - time() ) / DAY_IN_SECONDS );
-		$valid_to  = gmdate( 'Y-m-d', (int) $cert['validTo_time_t'] );
-		$issuer    = '';
-		if ( ! empty( $cert['issuer']['O'] ) ) {
-			$issuer = sanitize_text_field( (string) $cert['issuer']['O'] );
+
+		return array( $this->make_row( $domain, 'SSL', '', '', (string) $days_left, '' ) );
+	}
+
+	/**
+	 * Run an HTTP HEAD request.
+	 *
+	 * @param string $domain Domain.
+	 * @return array<string,mixed>|WP_Error
+	 */
+	private function query_http_head( $domain ) {
+		return wp_safe_remote_head(
+			esc_url_raw( 'https://' . $domain . '/' ),
+			array(
+				'timeout'     => 10,
+				'redirection' => 3,
+				'sslverify'   => true,
+				'user-agent'  => 'DPS DNS Lookup Widget/' . DPS_DNS_LOOKUP_WIDGET_VERSION . '; ' . home_url( '/' ),
+			)
+		);
+	}
+
+	/**
+	 * Detect server type from response headers.
+	 *
+	 * @param array<string,mixed> $remote HTTP response.
+	 * @return string
+	 */
+	private function detect_server_type( $remote ) {
+		$server = strtolower( sanitize_text_field( (string) wp_remote_retrieve_header( $remote, 'server' ) ) );
+		$cf_ray = sanitize_text_field( (string) wp_remote_retrieve_header( $remote, 'cf-ray' ) );
+		$litespeed_cache = sanitize_text_field( (string) wp_remote_retrieve_header( $remote, 'x-litespeed-cache' ) );
+		$powered_by = strtolower( sanitize_text_field( (string) wp_remote_retrieve_header( $remote, 'x-powered-by' ) ) );
+
+		if ( '' !== $cf_ray || false !== strpos( $server, 'cloudflare' ) ) {
+			return 'Cloudflare';
 		}
 
-		$data   = sprintf(
-			/* translators: %d: days left. */
-			__( '%d days left', 'dps-dns-lookup-widget' ),
-			$days_left
-		);
-		$detail = trim( 'Until: ' . $valid_to . ( $issuer ? ' | ' . $issuer : '' ) );
+		if ( '' !== $litespeed_cache || false !== strpos( $server, 'litespeed' ) || false !== strpos( $server, 'openlitespeed' ) ) {
+			return 'LiteSpeed';
+		}
 
-		return array( $this->make_row( $domain, 'SSL', '', '', $data, $detail ) );
+		if ( false !== strpos( $server, 'nginx' ) ) {
+			return 'nginx';
+		}
+
+		if ( false !== strpos( $server, 'apache' ) ) {
+			return 'Apache';
+		}
+
+		if ( false !== strpos( $powered_by, 'cloudflare' ) ) {
+			return 'Cloudflare';
+		}
+
+		return $server ? sanitize_text_field( $server ) : '';
 	}
 
 	/**

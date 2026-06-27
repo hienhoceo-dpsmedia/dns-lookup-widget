@@ -232,8 +232,9 @@ final class DPS_DNS_Lookup_Plugin {
 		$options = DPS_DNS_Lookup_Settings::get();
 
 		return array(
-			'HTTP' => ! empty( $options['enable_http'] ),
-			'SSL'  => ! empty( $options['enable_ssl'] ),
+			'HTTP'  => ! empty( $options['enable_http'] ),
+			'SERVER' => ! empty( $options['enable_http'] ),
+			'SSL'   => ! empty( $options['enable_ssl'] ),
 		);
 	}
 }

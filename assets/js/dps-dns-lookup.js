@@ -3,7 +3,7 @@
 
 	var COMMON_DNS_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT'];
 	var ADVANCED_DNS_TYPES = ['CAA', 'SOA'];
-	var SERVER_TYPES = ['HTTP', 'SSL'];
+	var SERVER_TYPES = ['HTTP', 'SSL', 'SERVER'];
 	var TYPE_LABELS = {
 		ALL: 'ALL DNS',
 		A: 'A',
@@ -15,7 +15,8 @@
 		CAA: 'CAA',
 		SOA: 'SOA',
 		HTTP: 'HTTP',
-		SSL: 'SSL'
+		SSL: 'SSL',
+		SERVER: 'SERVER'
 	};
 
 	function DpsDnsLookupWidget(root) {
@@ -58,6 +59,9 @@
 		}
 		if (this.isToolEnabled('SSL')) {
 			this.activeTypes.SSL = true;
+		}
+		if (this.isToolEnabled('SERVER')) {
+			this.activeTypes.SERVER = true;
 		}
 	};
 
@@ -376,7 +380,7 @@
 
 	DpsDnsLookupWidget.prototype.renderLookupCell = function (cell, type, payload, cached) {
 		var rows = payload.rows || [];
-		var textValue = this.rowsToDisplayText(rows, type, cached);
+		var textValue = this.rowsToDisplayText(rows);
 
 		cell.textContent = '';
 
@@ -395,11 +399,16 @@
 			return textValue;
 		}
 
+		if (type === 'SERVER') {
+			this.renderServerCell(cell, rows[0], cached);
+			return textValue;
+		}
+
 		this.renderDnsCell(cell, rows, cached);
 		return textValue;
 	};
 
-	DpsDnsLookupWidget.prototype.renderHttpCell = function (cell, row, cached) {
+	DpsDnsLookupWidget.prototype.renderHttpCell = function (cell, row) {
 		var code = parseInt(row.data, 10);
 		var tone = 'neutral';
 
@@ -411,16 +420,10 @@
 			tone = 'error';
 		}
 
-		this.appendBadge(cell, row.data || 'HTTP', tone);
-		if (row.detail) {
-			this.appendMeta(cell, row.detail);
-		}
-		if (cached) {
-			this.appendMeta(cell, 'cache');
-		}
+		this.appendBadge(cell, row.data || '', tone);
 	};
 
-	DpsDnsLookupWidget.prototype.renderSslCell = function (cell, row, cached) {
+	DpsDnsLookupWidget.prototype.renderSslCell = function (cell, row) {
 		var days = parseInt(row.data, 10);
 		var tone = 'success';
 
@@ -432,32 +435,20 @@
 			tone = 'warning';
 		}
 
-		this.appendBadge(cell, row.data || 'SSL', tone);
-		if (row.detail) {
-			this.appendMeta(cell, row.detail);
-		}
-		if (cached) {
-			this.appendMeta(cell, 'cache');
-		}
+		this.appendBadge(cell, row.data || '', tone);
 	};
 
-	DpsDnsLookupWidget.prototype.renderDnsCell = function (cell, rows, cached) {
-		var widget = this;
+	DpsDnsLookupWidget.prototype.renderServerCell = function (cell, row) {
+		this.appendBadge(cell, row.data || '', row.data ? 'neutral' : 'error');
+	};
 
-		rows.forEach(function (row) {
-			var block = document.createElement('div');
-			block.className = 'dps-dns-code-block';
-			block.textContent = row.data || '(empty)';
-			cell.appendChild(block);
+	DpsDnsLookupWidget.prototype.renderDnsCell = function (cell, rows) {
+		var block = document.createElement('div');
+		var row = rows[0] || {};
 
-			if (row.ttl || row.name) {
-				widget.appendMeta(cell, [row.name, row.ttl ? 'TTL ' + String(row.ttl) : ''].filter(Boolean).join(' | '));
-			}
-		});
-
-		if (cached) {
-			this.appendMeta(cell, 'cache');
-		}
+		block.className = 'dps-dns-code-block';
+		block.textContent = row.data || '';
+		cell.appendChild(block);
 	};
 
 	DpsDnsLookupWidget.prototype.appendBadge = function (cell, label, tone) {
@@ -467,32 +458,8 @@
 		cell.appendChild(badge);
 	};
 
-	DpsDnsLookupWidget.prototype.appendMeta = function (cell, text) {
-		var meta = document.createElement('div');
-		meta.className = 'dps-dns-meta';
-		meta.textContent = text;
-		cell.appendChild(meta);
-	};
-
-	DpsDnsLookupWidget.prototype.rowsToDisplayText = function (rows, type, cached) {
-		var lines = [];
-
-		rows.forEach(function (row) {
-			var line = row.data || '';
-			if (row.detail) {
-				line += line ? '\n' + row.detail : row.detail;
-			}
-			if (type !== 'HTTP' && type !== 'SSL' && row.ttl) {
-				line += line ? '\nTTL: ' + String(row.ttl) : 'TTL: ' + String(row.ttl);
-			}
-			lines.push(line);
-		});
-
-		if (cached && lines.length) {
-			lines.push('cache');
-		}
-
-		return lines.join('\n');
+	DpsDnsLookupWidget.prototype.rowsToDisplayText = function (rows) {
+		return rows.length ? String(rows[0].data || '') : '';
 	};
 
 	DpsDnsLookupWidget.prototype.refreshNonce = function () {
@@ -621,8 +588,7 @@
 				} catch (error) {
 					cell.textContent = '';
 					this.appendBadge(cell, 'Error', 'error');
-					this.appendMeta(cell, error.message);
-					this.rowMap[domain].data.results[type] = 'Error: ' + error.message;
+					this.rowMap[domain].data.results[type] = 'Error';
 				}
 
 				done += 1;

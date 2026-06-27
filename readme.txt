@@ -4,7 +4,7 @@ Tags: dns, lookup, ssl, http status, shortcode, tools, doh
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,6 +57,14 @@ No. The browser calls a WordPress REST endpoint. WordPress validates the request
 Yes. The widget JavaScript calls a REST endpoint for live lookups, while static assets can be cached normally.
 
 == Changelog ==
+
+= 1.1.2 =
+
+* Simplified table output for cleaner copy/export values.
+* DNS columns now show the first answer only.
+* HTTP now shows only the numeric status code.
+* SSL now shows only the number of days remaining.
+* Added a SERVER column for Cloudflare, nginx, LiteSpeed, Apache, or the detected server header.
 
 = 1.1.1 =
 

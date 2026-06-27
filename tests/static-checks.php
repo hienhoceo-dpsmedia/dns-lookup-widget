@@ -45,6 +45,7 @@ $checks = array(
 	'Remote call uses safe HTTP API' => false !== strpos( $rest, 'wp_safe_remote_get' ),
 	'Transient cache is used' => false !== strpos( $rest, 'get_transient' ) && false !== strpos( $rest, 'set_transient' ),
 	'HTTP checks are server-side' => false !== strpos( $rest, 'wp_safe_remote_head' ),
+	'Server type column exists' => false !== strpos( $rest, "'SERVER'" ) && false !== strpos( $js, 'SERVER' ),
 	'SSL checks are server-side' => false !== strpos( $rest, 'stream_socket_client' ) && false !== strpos( $rest, 'openssl_x509_parse' ),
 	'Admin settings exist' => false !== strpos( $admin, 'add_menu_page' ) && false !== strpos( $settings, 'sanitize' ),
 	'Optional logs table exists' => false !== strpos( $admin, 'dps_dns_lookup_logs' ),
@@ -54,7 +55,7 @@ $checks = array(
 	'CSS scoped to widget root' => false !== strpos( $css, '.dps-dns-widget' ),
 	'JS initializes widget instances' => false !== strpos( $js, 'DpsDnsLookupWidget' ),
 	'Nonce refresh route exists' => false !== strpos( $rest, "'/nonce'" ) && false !== strpos( $js, 'refreshNonce' ),
-	'Readme has stable tag' => false !== strpos( $readme, 'Stable tag: 1.1.1' ),
+	'Readme has stable tag' => false !== strpos( $readme, 'Stable tag: 1.1.2' ),
 );
 
 foreach ( $checks as $label => $passed ) {
