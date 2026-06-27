@@ -59,6 +59,10 @@
 		this.tTxtDomain = getTxt('.t-txt-domain', 'data-txt-domain', 'Domain');
 		this.tTxtEmpty = getTxt('.t-txt-empty', 'data-txt-empty', 'Empty');
 		this.tTxtError = getTxt('.t-txt-error', 'data-txt-error', 'Error');
+		this.tTxtConnFailed = getTxt('.t-txt-conn-failed', 'data-txt-conn-failed', 'Connection failed');
+		this.tTxtNoCert = getTxt('.t-txt-no-cert', 'data-txt-no-cert', 'No certificate');
+		this.tTxtParseError = getTxt('.t-txt-parse-error', 'data-txt-parse-error', 'Parse error');
+		this.tTxtDaysLeft = getTxt('.t-txt-days-left', 'data-txt-days-left', 'days left');
 
 		this.bindElements();
 		this.seedDefaultTypes();
@@ -457,16 +461,27 @@
 	DpsDnsLookupWidget.prototype.renderSslCell = function (cell, row) {
 		var days = parseInt(row.data, 10);
 		var tone = 'success';
+		var label = row.data || '';
 
 		if (!Number.isFinite(days)) {
 			tone = 'error';
-		} else if (days < 0) {
-			tone = 'error';
-		} else if (days < 14) {
-			tone = 'warning';
+			if (label === 'Connection failed') {
+				label = this.tTxtConnFailed;
+			} else if (label === 'No certificate') {
+				label = this.tTxtNoCert;
+			} else if (label === 'Parse error') {
+				label = this.tTxtParseError;
+			}
+		} else {
+			if (days < 0) {
+				tone = 'error';
+			} else if (days < 14) {
+				tone = 'warning';
+			}
+			label = days + ' ' + this.tTxtDaysLeft;
 		}
 
-		this.appendBadge(cell, row.data || '', tone);
+		this.appendBadge(cell, label, tone);
 	};
 
 	DpsDnsLookupWidget.prototype.renderServerCell = function (cell, row) {
